@@ -1,0 +1,5 @@
+*.pyc
+workflow/.bpipe/
+workflow/.bpipe.tmp*
+commandlog.txt
+tests/

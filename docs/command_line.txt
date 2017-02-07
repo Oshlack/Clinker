@@ -1,0 +1,102 @@
+# Generate Genome (first pass)
+STAR --runMode genomeGenerate --genomeDir /mnt/storage/guest/breons_star_compete/genome --genomeFastaFiles /home/breons/programs/fusion/compete/compete.fasta --runThreadN 16 --limitGenomeGenerateRAM 32000000000
+
+# Align (first pass)
+STAR --genomeDir /mnt/storage/guest/breon/bcrabl/alignments/genome/ --readFilesIn /mnt/CANC1-genomic/RNA_Seq_Experiments/161007_K00164_0085_BHGJK7BBXX_lanes_001_003/Limit_of_detection_experiment/EKL6-9-100pc_ML160945_TruSeq-Stranded-mRNA_161007_HGJK7BBXX_K00164_L003_R1.fastq.gz /mnt/CANC1-genomic/RNA_Seq_Experiments/161007_K00164_0085_BHGJK7BBXX_lanes_001_003/Limit_of_detection_experiment/EKL6-9-100pc_ML160945_TruSeq-Stranded-mRNA_161007_HGJK7BBXX_K00164_L003_R2.fastq.gz --runThreadN 24 --outSAMtype BAM SortedByCoordinate --readFilesCommand zcat --outFileNamePrefix /mnt/storage/guest/breon/bcrabl/alignments/alignment_100_sensitive/four/ --outSAMattributes All  --limitGenomeGenerateRAM 32000000000 --seedSearchStartLmax 25
+
+# Filter
+samtools view -h Aligned.sortedByCoord.out.bam "SFPQ:ABL1" | samtools view -Sb - > /mnt/storage/guest/breon/tests/results/SFPQ-ABL1/EKL6_1/plots/resources/SFPQ_ABL1.bam
+
+samtools view -h /mnt/storage/guest/breon/tests/results/SFPQ-ABL1/EKL6_1/plots/resources/SFPQ_ABL1.bam | awk '{if($0 ~ /^@/){print $0;} else {cigar = $6;gsub("([0-9]+[S])","",cigar); gsub("([0-9]+[I])","",cigar);gsub("([0-9]+[D])","",cigar);gsub("([0-9]+[N])"S,"",cigar); m = split(cigar,matches,"M"); if(m > 2) {if(matches[1] > 15 && matches[m-1] > 15){print $0;}} else if(m <= 2) {print $0;}}}' | samtools view -Sb - > /mnt/storage/guest/breon/tests/results/SFPQ-ABL1/EKL6_1/plots/resources/SFPQ_ABL1_lt15.bam
+
+samtools view /mnt/b/Work/MCRI/Fusion/program/test/SFPQ-ABL1/EKL6_1/alignment/pass1/SFPQ_ABL1/SFPQ_ABL1_lt15.bam -b -h -o /mnt/b/Work/MCRI/Fusion/program/test/SFPQ-ABL1/EKL6_1/alignment/pass1/SFPQ_ABL1/fusion_reads.bam -U /mnt/b/Work/MCRI/Fusion/program/test/SFPQ-ABL1/EKL6_1/alignment/pass1/SFPQ_ABL1/reads.bam -L /mnt/b/Work/MCRI/Fusion/program/test/SFPQ-ABL1/EKL6_1/annotation/test.bed
+
+samtools view -h fusion_reads.bam | awk '{if($0 ~ /^@/ || $6 ~ /N/) {print $0}}' | samtools view -Sb - > split_reads.bam
+
+# Create SJDB file
+
+awk 'BEGIN {OFS="\t"; strChar[0]="."; strChar[1]="+"; strChar[2]="-";} {if($5>0){print $1,$2,$3,strChar[$4]}}' ../Pass1/SJ.out.tab > SJ.out.tab.sjdb
+
+# Generate Genome (Second pass)
+
+STAR --genomeDir . --runMode genomeGenerate --genomeFastaFiles /mnt/storage/guest/breon/bcrabl/resources/fst_reference.fasta --sjdbFileChrStartEnd SJ.out.tab.sjdb --sjdbOverhang 100 --runThreadN 16 --limitGenomeGenerateRAM 32000000000
+
+Align (second pass)
+
+STAR --genomeDir genome_100 --readFilesIn /mnt/storage/shared/projects/ALL_RNASeq/data/EGAD00001001016/fastq/SJBALL020812_D1-D256UACXX.7_1.fastq.gz /mnt/storage/shared/projects/ALL_RNASeq/data/EGAD00001001016/fastq/SJBALL020812_D1-D256UACXX.7_2.fastq.gz --runThreadN 16 --outSAMtype BAM SortedByCoordinate --readFilesCommand zcat --outFileNamePrefix alignment_100_2 --outSAMattributes All
+
+
+# Extract the overlapping reads (you will need to know the fusion coordinates - get from BED)
+
+#For Sashimi plots
+samtools view -h Aligned.sortedByCoord.out.bam | awk '$6 ~ /N/ || $1 ~ /^@/' | samtools view -bS - > split_reads.bam # this will extract all split reads
+samtools view -h Aligned.sortedByCoord.out.bam | awk '$6 !~ /N/ || $1 ~ /^@/' | samtools view -bS - > yes-n-output.bam
+
+samtools view -h Aligned.sortedByCoord.out.bam "BCR:ABL1:1-7082" | samtools view -bS - > reads_left.bam
+samtools view -h Aligned.sortedByCoord.out.bam "BCR:ABL1:7083" | samtools view -bS - > reads_right.bam
+samtools merge -h reads.bam reads_left.bam reads_right.bam
+samtools index reads.bam
+
+
+
+
+# Trim reads with overhangs less than 15, colour sashimi
+
+
+
+samtools view -h cntrl_fgfr1.bam | awk '{if($0 ~ /^@/ || (($4 + awk -F) <= 8323 && $8 >= 8324) || ($4  >= 8323 && ($8 + 1000) <= 8324) ) {print $0; print $4;}}' | samtools view -Sb - > spanning_reads.bam
+
+samtools view -h spanning_reads.bam | awk '{if($0 ~ /^@/ || $6 ~ /N/ || $6 ~ /I/ ) {print $0}}' | samtools view -Sb - > spanning_pairs.bam
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# TESTS
+
+samtools view -h Aligned.sortedByCoord.out.bam "BCR:ABL1:7082-7083" | awk '{if($0 ~ /^@/ || $6 ~ /N/) {print $0}}' | samtools view -Sb - > split_reads.bam
+
+
+
+samtools view bcr_abl.bam "BCR:ABL1:7082-7083" -b -h -o output_inRegions.bam -U output_outRegions.bam -L Regions.bed
+
+
+
+samtools view -h cntrl_fgfr1.bam | awk '{if($0 ~ /^@/){print $0;} else {cigar = $6;gsub("([0-9]+[S])","",cigar);gsub("([0-9]+[I])","",cigar);gsub("([0-9]+[D])","",cigar);gsub("([0-9]+[N])","",cigar); m = split(cigar,matches,"M"); if(m > 2) {if(matches[1] > 20 && matches[m-1] > 20){print $0;}} else if(m <= 2) {print $0;}}}' | samtools view -Sb - > cntrl_fgfr1_lt15.bam
+
+
+
+
+
+
+
+
+
+
+@
+
+#################################################################################
+
+test=$(samtools view -c Aligned.sortedByCoord.out.bam | awk '{print 1000000/$1}')
+
+bedtools genomecov -ibam Aligned.sortedByCoord.out.bam -bg -scale $test -g ../../reference/fst_reference.fasta  > coverage_track.bedGraph
+
+
+
+
+rpstblastn -query abl1.fasta -db cdd_delta -out abl1.txt -outfmt "7 stitle qstart qend evalue"
+
+
+
+
