@@ -9,10 +9,10 @@ fst_output_folder = "../results/test" // where all the results will live
 
 /*--Inputs--*/
 fusion_finder_output = "caller/bcr_abl1.csv" // Location of fusion finders output file
-column_positions = "3 4 5 6" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
+column_positions = "1 2 3 4" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
 delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
 genome = "19" // was the above file generated with hg19 or hg38 (19, 38)
-competitive = true
+competitive = false
 
 /*--Alignment Parameters--*/
 threads = "16" // How many threads should the aligner use
