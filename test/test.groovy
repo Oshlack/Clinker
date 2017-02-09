@@ -5,7 +5,7 @@
 ===========================================================*/
 
 fst_program = new File ("..").getCanonicalPath() // location of this program, i.e. /path/to/program/, default is level up from this script
-fst_output_folder = "../results/test" // where all the results will live
+fst_output_folder = "results" // where all the results will live
 
 /*--Inputs--*/
 fusion_finder_output = "caller/bcr_abl1.csv" // Location of fusion finders output file
@@ -108,9 +108,9 @@ normalise = {
 			output.dir = "$alignment_folder/$folder_name"
 
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
-			exec '''echo "Normalising Coverage ($output.dir/coverage_rpm.bedgraph)" \
-					bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph \
-					echo "Normalisation Complete"'''
+			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
+			exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph"
+			exec "echo Normalisation Complete"
 
 		}
   }

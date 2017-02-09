@@ -108,9 +108,9 @@ normalise = {
 			output.dir = "$alignment_folder/$folder_name"
 
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
-			exec '''echo "Normalising Coverage ($output.dir/coverage_rpm.bedgraph)" \
-					bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph \
-					echo "Normalisation Complete"'''
+			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
+			exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph"
+			exec "echo Normalisation Complete"
 
 		}
   }
