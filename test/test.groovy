@@ -9,7 +9,7 @@ fst_output_folder = "../results/test" // where all the results will live
 
 /*--Inputs--*/
 fusion_finder_output = "caller/bcr_abl1.csv" // Location of fusion finders output file
-column_positions = "1 2 3 4" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
+column_positions = "3 4 5 6" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
 delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
 genome = "19" // was the above file generated with hg19 or hg38 (19, 38)
 competitive = true
@@ -19,12 +19,11 @@ threads = "16" // How many threads should the aligner use
 
 /*--Print a fusion of interest?--*/
 find_fusion = true //true will create generate a plot of below fusion, false will stop after the alignment.
-fusion = "BCR:ABL1" //if true above, identify a fusion of interest. Must be in order of fusion and seperated with a colon (:)"
-fusion_friendly = fusion.replaceAll(":", "_") //allows for windows compatiability
+fusion = ['BCR:ABL1'] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
 
-pdf_width = "8.27"
-pdf_height = "11.69"
-proportion = "1,3,1,3,3,2"
+pdf_width = "9"
+pdf_height = "16"
+proportion = "1,3,1,2,4,2"
 
 /*=======================================================
 
@@ -37,7 +36,6 @@ annotation_folder = "$fst_output_folder/annotation"
 alignment_folder = "$fst_output_folder/alignment"
 genome_folder = "$fst_output_folder/genome"
 reference_folder = "$fst_output_folder/reference"
-fusion_folder = "$alignment_folder/$fusion_friendly"
 
 /*=======================================================
 
@@ -63,7 +61,7 @@ star_genome_gen = {
 				--runThreadN $threads
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
-				--limitGenomeGenerateRAM 32000000000
+				--limitGenomeGenerateRAM 34000000000
 				--genomeSAindexNbases 5""","stargenind"
     }
 }
@@ -97,33 +95,83 @@ star_align = {
 	}
 }
 
-/*--Prepare fusion files for visualisation--*/
+/*--Prep normalise--*/
 
-prepare_fusion_plot = {
+normalise = {
+
 	from("*.fastq.gz") {
 		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("coverage_rpm.bedgraph") {
 
 			String R1 = inputs[0];
 			String file_name = R1.split("/")[-1]
 			String folder_name = file_name.split("_R1")[0]
-			output.dir = "$alignment_folder/$folder_name/$fusion_friendly"
-			String new_alignment = "$alignment_folder/$folder_name"
+			output.dir = "$alignment_folder/$folder_name"
 
-			exec "$fst_program/plotit/fst_plot_prep.sh $fusion $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder"
+			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
+			exec '''echo "Normalising Coverage ($output.dir/coverage_rpm.bedgraph)" \
+					bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph \
+					echo "Normalisation Complete"'''
+
 		}
+  }
+}
+
+
+/*--Prep fusion files--*/
+
+prepare_plot = {
+
+	for(fusion_name in fusion){
+
+		fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
+
+		from("*.fastq.gz") {
+			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
+
+				String R1 = inputs[0];
+				String file_name = R1.split("/")[-1]
+				String folder_name = file_name.split("_R1")[0]
+				output.dir = "$alignment_folder/$folder_name/$fusion_friendly"
+				String new_alignment = "$alignment_folder/$folder_name"
+
+				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder"
+
+			}
+
+	  	}
 	}
 }
 
-/*--Print fusion pdf--*/
+/*--Plot fusion--*/
 
 plot_fusion = {
-	from("*.fastq.gz") {
-			String R1 = inputs[0];
-			String file_name = R1.split("/")[-1]
-			String folder_name = file_name.split("_R1")[0]
-			output.dir = "$alignment_folder/$folder_name/$fusion_friendly"
 
-			exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion $output.dir $pdf_height $pdf_width $proportion"
+	for(fusion_name in fusion){
+
+		fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
+
+		from("*.fastq.gz") {
+			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("${fusion_friendly}.pdf") {
+
+				String R1 = inputs[0];
+				String file_name = R1.split("/")[-1]
+				String folder_name = file_name.split("_R1")[0]
+				String friendly_folder = "$alignment_folder/$folder_name/$fusion_friendly"
+				String new_alignment = "$alignment_folder/$folder_name"
+
+				String plot_path = fst_output_folder + "/plots/" + folder_name
+				def plot_folder = new File(plot_path)
+
+				if( !plot_folder.exists() ) {
+					plot_folder.mkdirs()
+				}
+
+				output.dir = plot_path
+
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_height $pdf_width $proportion $new_alignment $folder_name"
+
+			}
+		}
 	}
 }
 
@@ -131,7 +179,7 @@ plot_fusion = {
 
 if(find_fusion){
 	Bpipe.run {
-		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + prepare_fusion_plot + plot_fusion]
+		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + normalise + prepare_plot + plot_fusion]
 	}
 } else {
 	Bpipe.run {
