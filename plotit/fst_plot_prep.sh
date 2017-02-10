@@ -45,6 +45,7 @@ echo 'Index BAM files'
 samtools index $fusion_folder/reads.bam
 samtools index $fusion_folder/fusion_reads.bam
 samtools index $fusion_folder/split_reads.bam
+
 #------------------------------------------------------------------------------------------
 # Create SJ.Tab.out
 #------------------------------------------------------------------------------------------

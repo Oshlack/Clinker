@@ -332,7 +332,12 @@ pdfIt <- function(width, height, fusion, fusion_friendly, results_location, file
     sample_name <- user_input$sample_name
 
     pdf_name <- paste(fusion_friendly, '.pdf', sep="")
-    pdf_location <- paste(results_location, "plots", sample_name, pdf_name, sep="/")
+
+    if(is.na(sample_name)){
+        pdf_location <- paste(results_location, "plots", pdf_name, sep="/")
+    } else {
+        pdf_location <- paste(results_location, "plots", sample_name, pdf_name, sep="/")
+    }    
 
     # Get dimensions for final track
     track_dimensions <- trackDimensions(files$gene, fusion)
