@@ -4,10 +4,10 @@
 #------------------------------------------------------------------------------------------
 fusion=$1
 fusion_folder=$2
-fusion_friendly=$3
-results_folder=$4
-fastq_1=$5
-fastq_2=$6
+fusion_friendly=${fofusiono/:/_}
+results_folder=$3
+fastq_1=$4
+fastq_2=$5
 annotation_folder=$results_folder'/annotation'
 alignment_folder=$results_folder'/alignment'
 alignment_folder_close=$results_folder'/alignment/'
