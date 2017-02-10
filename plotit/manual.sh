@@ -5,9 +5,26 @@
 fusion=$1
 fusion_folder=$2
 fusion_friendly=$3
-annotation_folder=$4
-alignment_folder=$5
-reference_folder=$6
+results_folder=$4
+fastq_1=$5
+fastq_2=$6
+annotation_folder=$results_folder'/annotation'
+alignment_folder=$results_folder'/alignment'
+alignment_folder_close=$results_folder'/alignment/'
+aligned=$alignment_folder'/Aligned.sortedByCoord.out.bam'
+reference_folder=$results_folder'/reference'
+genome_folder=$results_folder'/genome'
+fst=$reference_folder'/fst_reference.fasta'
+#------------------------------------------------------------------------------------------
+# Generate Genome & Align
+#------------------------------------------------------------------------------------------
+STAR --runMode genomeGenerate --runThreadN 1 --genomeDir $genome_folder --genomeFastaFiles $fst --genomeSAindexNbases 5
+STAR --genomeDir $genome_folder --readFilesIn $fastq_1 $fastq_2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --runThreadN 1 --outFileNamePrefix $alignment_folder_close --limitBAMsortRAM 1004462444
+#------------------------------------------------------------------------------------------
+# Generate Genome & Align
+#------------------------------------------------------------------------------------------
+samtools index $aligned
+bamCoverage -b $aligned --normalizeUsingRPKM -of bedgraph --binSize 1 -o $alignment_folder/coverage_rpm.bedgraph
 #------------------------------------------------------------------------------------------
 # Make a fusion folder directory
 #------------------------------------------------------------------------------------------
