@@ -361,12 +361,13 @@ def createAnnotationFiles(fusions, st_genes, annotation_folder):
             exon_boundaries.write(exons)
 
 
-        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t"+fusion.gene_name_2+"\t1\t+\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t255,0,0\n"
+        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t"+fusion.gene_name_2+"\t1\t+\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t0,186,255\n"
         gene_boundaries.write(gene_line)
 
 
     exon_boundaries.close()
     gene_boundaries.close()
+
 
 '''---------------------------------------------------------
 #
@@ -378,6 +379,12 @@ def createAnnotationFiles(fusions, st_genes, annotation_folder):
 ---------------------------------------------------------'''
 
 def createFusionList(fusion_results, pos, gene_list_location, st_genes, header, delimiter):
+
+    if type(fusion_results) == str:
+        supplied = True
+        fusion_results = fusion_results.strip("[").strip("]").split(",")
+    else:
+        supplied = False
 
     fusions = Fusions()
     duplicates = {}
@@ -397,24 +404,32 @@ def createFusionList(fusion_results, pos, gene_list_location, st_genes, header, 
 
     for line in fusion_results:
 
-        if header:
-            header = False
-            continue
+        if not supplied:
 
-        if delimiter == "t":
-            delim = "\t"
+            if header:
+                header = False
+                continue
+
+            if delimiter == "t":
+                delim = "\t"
+            else:
+                delim = ","
+
+            columns = line.split(delim)
+
+            # If two columns selected, not 4, then chromosome and location in same cell. Split by ; and :
+            # Assumption that genomic coordinates are in the form of chrX:1932801
+            chr_1, bp_1, chr_2, bp_2 = breakpointLocation(pos, columns)
+
+            # Map gene names from breakpoint coordinates
+            gene_1 = mapGene(chromosomes, chr_1, bp_1, total)
+            gene_2 = mapGene(chromosomes, chr_2, bp_2, total)
+
         else:
-            delim = ","
+            gene_entry = line.split(":")
 
-        columns = line.split(delim)
-
-        # If two columns selected, not 4, then chromosome and location in same cell. Split by ; and :
-        # Assumption that genomic coordinates are in the form of chrX:1932801
-        chr_1, bp_1, chr_2, bp_2 = breakpointLocation(pos, columns)
-
-        # Map gene names from breakpoint coordinates
-        gene_1 = mapGene(chromosomes, chr_1, bp_1, total)
-        gene_2 = mapGene(chromosomes, chr_2, bp_2, total)
+            gene_1 = gene_entry[0]
+            gene_2 = gene_entry[1]
 
         # Map gene to superTranscriptome
         fusion, duplicates, found, not_found = mapSupertranscript(gene_1, gene_2, duplicates, found, not_found, total, st_genes)
@@ -438,7 +453,8 @@ def createFusionList(fusion_results, pos, gene_list_location, st_genes, header, 
         print "\n==============================================================\n"
 
     # cleanup
-    gene_locations.close()
+    if not supplied:
+        gene_locations.close()
 
     return fusions
 

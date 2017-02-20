@@ -8,6 +8,7 @@ fst_program = new File ("..").getCanonicalPath() // location of this program, i.
 fst_output_folder = "/mnt/storage/guest/breon/final/results/EKL6_9" // where all the results will live
 
 /*--Inputs--*/
+fusion_finder = false // if false, gene names listed via the "fusion" variable below
 fusion_finder_output = "/mnt/CANC1-genomic/RNA_Seq_Experiments/JAFFA_files/20160610/EKL6_9/jaffa_results.csv" // Location of fusion finders output file
 column_positions = "3 4 5 6" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
 delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
@@ -19,7 +20,7 @@ threads = "16" // How many threads should the aligner use
 
 /*--Print a fusion of interest?--*/
 find_fusion = true //true will create generate a plot of below fusion, false will stop after the alignment.
-fusion = ['BCR:ABL1','ARID2:PFKM'] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
+fusion = [BCR:ABL1,ARID2:PFKM] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
 
 pdf_width = "9"
 pdf_height = "16"
@@ -47,7 +48,7 @@ reference_folder = "$fst_output_folder/reference"
 
 generate_fst = {
 	produce("$fst_output_folder/reference/fst_reference.fasta") {
-		exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive"
+ 		exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion"
 	}
 }
 

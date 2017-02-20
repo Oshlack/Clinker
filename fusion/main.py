@@ -34,7 +34,7 @@ import annotation
 user_input = sys.argv
 
 # Get input
-fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive = setup.programInput(user_input)
+fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions = setup.programInput(user_input)
 
 # Create a hash table of super transcripts
 st_file = open(st_location, 'r')
@@ -44,13 +44,17 @@ st_genes = setup.superTranscriptIndex(st_file)
 st_file.close()
 
 # go through Fusion Finders results
-fusion_results = open(fusion_input,'r')
+if supplied_fusions == False:
+	fusion_results = open(fusion_input,'r')
+else:
+	fusion_results = supplied_fusions
 
 if "pos" in locals():
 	fusions = fusiontools.createFusionList(fusion_results, pos, gene_list_location, st_genes, True, delimiter)
 else:
 	pos = [1, 2, 3, 4]
 	fusions = fusiontools.createFusionList(fusion_results, pos, gene_list_location, st_genes, True, delimiter)
+
 
 # Create the results folder structure
 
@@ -85,7 +89,8 @@ fusiontools.createFusionFasta(fusions, reference_folder, st_genes, competitive)
 fusiontools.createAnnotationFiles(fusions, st_genes, annotation_folder)
 
 # Clean up
-fusion_results.close()
+if supplied_fusions == False:
+	fusion_results.close()
 
 # Create bed files
 st_bed_file = open(annotation_location,'r')

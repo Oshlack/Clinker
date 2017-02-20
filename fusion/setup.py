@@ -24,21 +24,23 @@ def programInput(user_input):
 		# Command identifier?
 		if "-" == user_input[argument][0]:
 
-			if "in" in user_input[argument]:
+			if "-in" == user_input[argument]:
 				command = 1
-			elif "out" in user_input[argument]:
+			elif "-out" == user_input[argument]:
 				command = 2
-			elif "pos" in user_input[argument]:
+			elif "-pos" == user_input[argument]:
 				pos = []
 				command = 3
-			elif "st" in user_input[argument]:
+			elif "-st" == user_input[argument]:
 				command = 4
-			elif "del" in user_input[argument]:
+			elif "-del" == user_input[argument]:
 				command = 5
-			elif "genome" in user_input[argument]:
+			elif "-genome" == user_input[argument]:
 				command = 6
-			elif "competitive" in user_input[argument]:
+			elif "-competitive" == user_input[argument]:
 				command = 7
+			elif "-fusionlist" == user_input[argument]:
+				command = 8
 			else:
 				print "ERROR: " + user_input[argument] + " is not a valid argument. Please use the following options:\n"
 				print "-in (path/to/fusions OR custom, space delimited list)"
@@ -72,6 +74,11 @@ def programInput(user_input):
 				else:
 					print "ERROR: Please ensure that -competitive is set to either true or false"
 					sys.exit(1)
+			elif command == 8:
+				if len(user_input[argument]) > 0:
+					supplied_fusions = user_input[argument]
+				else:
+					supplied_fusions = False
 
 	# If resources does not exist, assume native structure
 	if "resources" not in locals():
@@ -89,14 +96,16 @@ def programInput(user_input):
 			print "ERROR: Genome build can be either 38 or 19, please select appropriately."
 			sys.exit(1)
 
-	if "pos" in locals():
 		gene_list_location = resources+'/'+genome_build_location
 
 	if "delimiter" not in locals():
 		delimiter = "c"
 
+	if "supplied_fusions" not in locals():
+		supplied_fusions = False
 
-	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive
+
+	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions
 
 '''---------------------------------------------------------
 #
