@@ -5,22 +5,22 @@
 ===========================================================*/
 
 fst_program = new File ("..").getCanonicalPath() // location of this program, i.e. /path/to/program/, default is level up from this script
-fst_output_folder = "/mnt/storage/guest/breon/final/results/EKL6_9" // where all the results will live
+fst_output_folder = "/mnt/storage/guest/breon/final/results/P2RY8-CRLF2" // where all the results will live
 
 /*--Inputs--*/
 fusion_finder = false // if false, gene names listed via the "fusion" variable below
-fusion_finder_output = "/mnt/CANC1-genomic/RNA_Seq_Experiments/JAFFA_files/20160610/EKL6_9/jaffa_results.csv" // Location of fusion finders output file
+fusion_finder_output = "/mnt/storage/guest/breon/p2ry8_crlf2/jaffa/all.csv" // Location of fusion finders output file
 column_positions = "3 4 5 6" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
 delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
 genome = "19" // was the above file generated with hg19 or hg38 (19, 38)
 competitive = true
 
 /*--Alignment Parameters--*/
-threads = "16" // How many threads should the aligner use
+threads = "1" // How many threads should the aligner use
 
 /*--Print a fusion of interest?--*/
 find_fusion = true //true will create generate a plot of below fusion, false will stop after the alignment.
-fusion = [BCR:ABL1,ARID2:PFKM] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
+fusion = ["P2RY8:CRLF2"] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
 
 pdf_width = "9"
 pdf_height = "16"
@@ -48,7 +48,11 @@ reference_folder = "$fst_output_folder/reference"
 
 generate_fst = {
 	produce("$fst_output_folder/reference/fst_reference.fasta") {
- 		exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion"
+		if(fusion_finder){
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion"
+		} else {
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive"
+		}
 	}
 }
 
@@ -59,10 +63,10 @@ star_genome_gen = {
     produce("$genome_folder/Genome") {
 	    exec """
 	        STAR --runMode genomeGenerate
-				--runThreadN $threads
+				--runThreadN 8
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
-				--limitGenomeGenerateRAM 34000000000
+				--limitGenomeGenerateRAM 36000000000
 				--genomeSAindexNbases 5""","stargenind"
     }
 }
@@ -110,7 +114,7 @@ normalise = {
 
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
 			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
-			exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph"
+			exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads"
 			exec "echo Normalisation Complete"
 
 		}

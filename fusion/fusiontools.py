@@ -124,14 +124,15 @@ def geneList(gene_locations):
         gene_line = line.split("\t")
         gene = Gene(gene_line[1], int(gene_line[2]), int(gene_line[3]))
 
-        if gene_line[0] != c_chr:
+        if gene_line[0].lower() != c_chr:
+
             if first:
                 first = False
             else:
                 chromosomes.addChromosome(c_chr, gene_list)
 
             gene_list = []
-            c_chr = gene_line[0]
+            c_chr = gene_line[0].lower()
             gene_list.append(gene)
 
         else:
@@ -154,12 +155,21 @@ def mapGene(chromosomes, chromosome, breakpoint, total):
     gene_default = "Not Found"
     min_distance = 0
     min_gene = False
+    gene_length_min = 9000000000
+    found_gene = False
 
     try:
+
         for gene in chromosomes.index[chromosome]:
+
+            # For nested genes, choose the smallest gene in which the breakpoint resides
+            gene_length = abs(gene.end - gene.start)
+
             if breakpoint >= gene.start and breakpoint <= gene.end:
-                confirmed_gene = gene.name
-                return confirmed_gene
+                if gene_length < gene_length_min:
+                    confirmed_gene = gene.name
+                    gene_length_min = gene_length
+                    found_gene = True
             else:
                 start_distance = abs(gene.start - breakpoint)
                 end_distance = abs(gene.end - breakpoint)
@@ -175,8 +185,11 @@ def mapGene(chromosomes, chromosome, breakpoint, total):
                         min_gene = gene.name
                         where = "downstream"
 
-        error(22, min_gene, min_distance, total, where)
-        return gene_default
+        if found_gene:
+            return confirmed_gene
+        else:
+            error(22, min_gene, min_distance, total, where)
+            return gene_default
 
     except KeyError:
         return gene_default

@@ -249,11 +249,12 @@ prepare <- function(){
     unique <- fusion_junctions[4]
     multi <- fusion_junctions[5]
     fusion_junctions$support <- unique + multi
-    fusion_junction <- fusion_junctions[fusion_junctions$support == max(fusion_junctions$support), , drop=FALSE]
+    #fusion_junction <- fusion_junctions[fusion_junctions$support == max(fusion_junctions$support), , drop=FALSE]
+    fusion_junction <- fusion_junctions[fusion_junctions$support > 3, , drop=FALSE]
 
     fusion_frame_name <- c(fusion, fusion)
-    fusion_frame_start <- c(fusion_junction[1,2], fusion_junction[1,3])
-    fusion_frame_end <- c(fusion_junction[1,2], fusion_junction[1,3])
+    fusion_frame_start <- c(fusion_junction[,2], fusion_junction[,3])
+    fusion_frame_end <- c(fusion_junction[,2], fusion_junction[,3])
     fusion_frame <- data.frame("chromosomes" = fusion_frame_name, "start" = fusion_frame_start, "end" = fusion_frame_end)
 
     protein_map_file <- as.data.frame(read.table(locations$proteins))
@@ -294,7 +295,7 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
 
     # Create Tracks
     splice_junction_track  <- AlignmentsTrack(locations$alignment_filtered, sashimiScore = 10, fontsize = 10, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#D7D4E4", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
-    split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
+    split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, sashimiScore = 2, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
     sashimi_plot <- OverlayTrack(trackList = list(split_read_junction_track, splice_junction_track, split_read_junction_track), background.title = "#6e65ad", name = " ")
 
     coverage <- DataTrack(locations$alignment, fontsize = 10, background.title = "#6e65ad", name = "Coverage", type=c("histogram"), fill="#6e65ad", col.histogram = "#6e65ad")
@@ -337,7 +338,7 @@ pdfIt <- function(width, height, fusion, fusion_friendly, results_location, file
         pdf_location <- paste(results_location, "plots", pdf_name, sep="/")
     } else {
         pdf_location <- paste(results_location, "plots", sample_name, pdf_name, sep="/")
-    }    
+    }
 
     # Get dimensions for final track
     track_dimensions <- trackDimensions(files$gene, fusion)
@@ -351,7 +352,6 @@ pdfIt <- function(width, height, fusion, fusion_friendly, results_location, file
                 from=track_dimensions$lower, to=track_dimensions$upper,
                 chromosome=fusion, shape = "box", min.height = 5,
                 gene_one="#3983AA", gene_two="#2b749a")'
-
 
     the_plot <- eval(parse(text = plot_it))
     print("PDF created.")
@@ -368,54 +368,3 @@ pdfIt <- function(width, height, fusion, fusion_friendly, results_location, file
 #-----------------------------------------------------------
 
 prepare()
-
-#-----------------------------------------------------------
-#
-#   S T U F F
-#
-#-----------------------------------------------------------
-
-
-    #alignment_file_location_spanning = results_location+"/spanning_reads.bam"
-    #pileup_track <- AlignmentsTrack(alignment_file_location_spanning, fontsize = 10, chromosome = fusion, col.mates = "purple", isPaired = TRUE, col.gap = "orange", background.title = "#ff9900", type=c("pileup"), size = 0.001, lwd = 1, name = "Spanning Reads")
-
-
-    # Exon Lines
-    #the_plot <- eval(parse(text = plot_it))
-    #title_start <- coords(the_plot$titles)
-    #title_start <- title_start[1,3]
-    #margin_left <- 8
-    #weird_title_offsets <- 2.3*2
-
-    #it_begins <- (margin_left + title_start + weird_title_offsets)
-    #offset <- it_begins + 10
-    #track_ratio <- (1000-offset)/1000
-    #track_width <- pdf_width*track_ratio
-
-    #exon_positions <- exon_annotation[,3] - exon_annotation[,2]
-    #total_exon_cover <- sum(exon_positions)
-    #exon_positions <- exon_positions/total_exon_cover*track_width
-
-    #tally <- 0
-
-    #for(position in exon_positions)
-    #{
-        #tally <- tally + position
-        #vp <- viewport(x = unit(tally + pdf_width*it_begins/1000, "inches"), y = unit(0.5, "inches"), width = 0, height = unit(pdf_height/2, "inches"), gp = gpar(col = "#dcebff", lwd = 1))
-        #grid.lines(vp = vpStack(vp))
-    #}
-
-
-
-    #junction_track <- HighlightTrack(files$junctions, fill="#f05f3b", col = "#f05f3b", fontsize = 12,  chromosome = fusion, name="Junctions")
-    #coverage_junction <- OverlayTrack(trackList = list(coverage, junction_track), background.title = "#6e65ad", name = "Coverage")
-    #transcript_junction <- OverlayTrack(trackList = list(transcript_track, junction_track), background.title = "#a1d16e", name = "Transcripts")
-
-    # Colour Tracks
-    #colour_exons <- colourTracks("Exons", exon_group$count, FALSE, "#dadada", "#bababa")
-    #colour_domains <- colourTracks("Domains", protein_group$count, FALSE, "#EF5F3B", "#fa7655")
-    #annotation_colour <- paste(colour_exons$colour,',',colour_domains$colour, collapse = ",", sep="")
-
-    # Add coloured features
-    #feature(exon_track)[1:exon_group$count] <- colour_exons$id
-    #feature(domain_track) <- colour_domains$ids

@@ -59,9 +59,6 @@ def programInput(user_input):
 				pos.append(user_input[argument])
 			elif command == 4:
 				resources = user_input[argument]
-				st_location = resources+'/hg38_genCode24_st.fasta'
-				annotation_location = resources+'/hg38_genCode24_st-sorted-exons.gtf'
-				protein_location =  resources+'/hg38_genCode24_pfam-map.bed'
 			elif command == 5:
 				delimiter = user_input[argument]
 			elif command == 6:
@@ -103,7 +100,6 @@ def programInput(user_input):
 
 	if "supplied_fusions" not in locals():
 		supplied_fusions = False
-
 
 	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions
 
