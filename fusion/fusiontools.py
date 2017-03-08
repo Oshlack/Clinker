@@ -8,7 +8,6 @@ import setup
 import sys
 from random import randint
 
-
 '''=========================================================
 
     C L A S S E S
@@ -95,7 +94,7 @@ def error(code, *support):
         print new_line+"Closest mapped gene name is '"+min_gene+"' ("+str(min_distance)+" bp "+stream+")"
 
     if code == 23:
-        print "-----------------------------------\n"
+        print "--------------------------------------------------------------\n"
         print "Note: Some superTranscripts were not generated. This could be because of:"
         print "\tA: The breakpoint was not within a gene (this program only deals with these)."
         print "\tB: The superTranscript reference file did not contain an entry for that gene symbol."
@@ -208,8 +207,8 @@ def getSequence(st_genes, gene):
     try:
         sequence = st_genes[gene][0]
     except KeyError:
-        error(32, gene)
         sequence = False
+        #error(32, gene)
 
     return sequence
 
@@ -411,6 +410,9 @@ def createFusionList(fusion_results, pos, gene_list_location, st_genes, header, 
     not_found = 0
     total = 0
 
+    # Error duplicates
+    st_errors = {}
+
     # Print stage
     print "\n==============================================================\n"
     print "Create fusion superTranscriptome:\n"
@@ -457,8 +459,10 @@ def createFusionList(fusion_results, pos, gene_list_location, st_genes, header, 
 
     # Print Result
 
-    print "\n-----------------------------------"
-    print "Mapped: "+str(found), "Not Mapped: "+str(not_found), "Total: "+str(total)
+    print "\n--------------------------------------------------------------"
+    print "Gene Symbols Mapped: "+str(found), "Not Mapped: "+str(not_found), "Total: "+str(total)
+    #print "\n--------------------------------------------------------------"
+    #print str(len(st_errors))+" genes did not exist within the ST reference file"
 
     if not_found > 0:
         error(23)

@@ -1,42 +1,128 @@
 /*===========================================================
 
-	P I P E L I N E   P A R A M E T E R S
+	C L I N K E R  P I P E L I N E
+
+	Author: Breon Schmidt
+	Version: 1.1
+	Notes: Contains no queue system
 
 ===========================================================*/
 
+/*===========================================================
+
+	P I P E L I N E   V A R I A B L E S
+
+===========================================================*/
+
+/*===========================================================
+	Get user defined variables or define defaults
+===========================================================*/
+
+/*-- Define where all the results will live, i.e. /path/to/results/ --*/
+
+if(binding.variables.containsKey("out")){
+	fst_output_folder = out
+} else {
+	// Create results folder in current location
+	fst_output_folder = "./results"
+	new File($fst_output_folder).mkdirs()
+}
+
+/*-- Only make FST from supplied fusions. Fusion caller not required. --*/
+
+if(binding.variables.containsKey("caller")){
+
+	fusion_finder = false // if true, use fusions listed in fusion caller
+	fusion_finder_output = caller // Location of fusion finders output file
+
+	/*--If a fusion caller is specified, caller output information must be defined--*/
+	if(binding.variables.containsKey("col")){
+		column_positions = col // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
+	} else {
+		column_positions = "1,2,3,4"
+	}
+
+	/*--Specify delimiter of file, default command--*/
+	if(binding.variables.containsKey("del")){
+		delimiter = del // is the above file tab or comma delimited (t or c, c if ommited)
+	} else {
+		delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
+	}
+
+	/*--Specify genome of file, default 19... because for some reason people use that more--*/
+	if(binding.variables.containsKey("genome")){
+		genome = genome
+	} else {
+		genome = "19"
+	}
+
+} else {
+	fusion_finder = true // if false, gene names listed via the "fusion" variable below
+}
+
+if(binding.variables.containsKey("print")){
+
+	if(print){
+
+		// Fusion specific parameters
+		find_fusion = true
+
+		if(binding.variables.containsKey("fusions")){
+			fusion = [fusions] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
+		} else {
+			print "Please insert a comma delimited list of fusions"
+			System.exit(0)
+		}
+
+		// PDF specific parameters
+
+		if(binding.variables.containsKey("pdf_width")){
+			pdf_width = pdf_width
+		} else {
+			pdf_width = "9"
+		}
+
+		if(binding.variables.containsKey("pdf_height")){
+			pdf_height = pdf_height
+		} else {
+			pdf_height = "16"
+		}
+
+		// Adjusts the relative track sizes in the final PDF
+		// Order: axis, coverage, genes, domains, transcripts, splice junctions
+
+		if(binding.variables.containsKey("sizing")){
+			proportion = sizing
+		} else {
+			proportion = "1,3,1,2,4,2"
+		}
+
+	} else {
+		find_fusion = false
+	}
+}
+
+if(binding.variables.containsKey("competitive")){
+	competitive = true
+} else {
+	competitive = false
+}
+
+/*===========================================================
+	Setup pipeline parameters
+===========================================================*/
+
 fst_program = new File ("..").getCanonicalPath() // location of this program, i.e. /path/to/program/, default is level up from this script
-fst_output_folder = "/mnt/storage/guest/breon/final/results/P2RY8-CRLF2" // where all the results will live
-
-/*--Inputs--*/
-fusion_finder = false // if false, gene names listed via the "fusion" variable below
-fusion_finder_output = "/mnt/storage/guest/breon/p2ry8_crlf2/jaffa/all.csv" // Location of fusion finders output file
-column_positions = "3 4 5 6" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
-delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
-genome = "19" // was the above file generated with hg19 or hg38 (19, 38)
-competitive = true
-
-/*--Alignment Parameters--*/
 threads = "1" // How many threads should the aligner use
 
-/*--Print a fusion of interest?--*/
-find_fusion = true //true will create generate a plot of below fusion, false will stop after the alignment.
-fusion = ["P2RY8:CRLF2"] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
+/*===========================================================
+	Setup pipeline paths
+===========================================================*/
 
-pdf_width = "9"
-pdf_height = "16"
-proportion = "1,3,1,2,4,2"
-
-/*=======================================================
-
-	P I P E L I N E   P A T H S
-	Note: change only if comfortable editing R (fst_plot.r)
-
-=======================================================*/
-
-annotation_folder = "$fst_output_folder/annotation"
-alignment_folder = "$fst_output_folder/alignment"
-genome_folder = "$fst_output_folder/genome"
-reference_folder = "$fst_output_folder/reference"
+annotation_folder = fst_output_folder+"/annotation"
+alignment_folder = fst_output_folder+"/alignment"
+genome_folder = fst_output_folder+"/genome"
+reference_folder = fst_output_folder+"/reference"
 
 /*=======================================================
 
@@ -63,11 +149,11 @@ star_genome_gen = {
     produce("$genome_folder/Genome") {
 	    exec """
 	        STAR --runMode genomeGenerate
-				--runThreadN 8
+				--runThreadN $threads
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
 				--limitGenomeGenerateRAM 36000000000
-				--genomeSAindexNbases 5""","stargenind"
+				--genomeSAindexNbases 5"""
     }
 }
 
@@ -95,7 +181,7 @@ star_align = {
 				--runThreadN $threads
 				--outFileNamePrefix "$output.dir/"
 				--limitBAMsortRAM 20000000000
-			""","star1pass"
+			"""
 	    }
 	}
 }

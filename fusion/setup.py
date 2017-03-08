@@ -14,10 +14,10 @@ import general
 
 def programInput(user_input):
 
-	print "\n\n====================================================\n\n"
+	print "\n\n==============================================================\n\n"
 	print "\tFusion Super Transcript Generator\n"
 	print "\tA fusion visualiser."
-	print "\n\n====================================================\n\n"
+	print "\n\n==============================================================\n\n"
 
 	for argument in range(1, len(user_input)):
 
@@ -29,7 +29,6 @@ def programInput(user_input):
 			elif "-out" == user_input[argument]:
 				command = 2
 			elif "-pos" == user_input[argument]:
-				pos = []
 				command = 3
 			elif "-st" == user_input[argument]:
 				command = 4
@@ -56,7 +55,7 @@ def programInput(user_input):
 			elif command == 2:
 				destination = user_input[argument]
 			elif command == 3:
-				pos.append(user_input[argument])
+				pos = user_input[argument].split(",")
 			elif command == 4:
 				resources = user_input[argument]
 			elif command == 5:

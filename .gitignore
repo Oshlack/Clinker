@@ -3,3 +3,5 @@ workflow/.bpipe/
 workflow/.bpipe.tmp*
 commandlog.txt
 tests/
+workflow/clinkerm.groovy
+workflow/bpipe.config
