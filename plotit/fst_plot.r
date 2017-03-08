@@ -298,9 +298,6 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
     split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, sashimiScore = 2, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
     sashimi_plot <- OverlayTrack(trackList = list(split_read_junction_track, splice_junction_track, split_read_junction_track), background.title = "#6e65ad", name = " ")
 
-    alignment2_location <- "/mnt/storage/breons/Clinker/EPOR/alignment/EPOR_fusion/coverage2_rpm.bedgraph"
-
-    coverage2 <- DataTrack(alignment2_location, fontsize = 10, background.title = "#6e65ad", name = "Coverage", chromosome = fusion, type=c("histogram"), fill="#6e65ad", col.histogram = "#6e65ad")
     coverage <- DataTrack(locations$alignment, fontsize = 10, background.title = "#6e65ad", name = "Coverage", chromosome = fusion, type=c("histogram"), fill="#6e65ad", col.histogram = "#6e65ad")
 
     gene_track <- AnnotationTrack(locations$genes, fontsize = 12, showFeatureId = TRUE, chromosome = fusion, col="#2b749a", background.title = "#3983AA", group = gene_group$group, name="Genes", stacking="hide")
@@ -309,7 +306,7 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
     exon_track <- AnnotationTrack(files$exons, fontsize = 12, fontsize.group = 8, showFeatureId = TRUE, featureAnnotation = "group", size = 0.1, just.group = "left", fontcolor.item = "#000000", col="black", background.title = "#1d3c66", title.width = 0.1, chromosome = fusion, group = exon_group$group, name="Exons", size = 0.001, stacking = "dense", mergeGroups = FALSE)
     gene_axis_track <- GenomeAxisTrack(fontsize = 12, chromosome = fusion, add53 = TRUE, add35 = TRUE)
     feature(gene_track) <- c(geneBoundaries(files))
-    highlights <- HighlightTrack(list(coverage2, coverage, gene_track, domain_track, transcript_track), start = highlight_start, end = highlight_end, col = "transparent", fill = "#AE7FC6", inBackground = FALSE, chromosome = fusion)
+    highlights <- HighlightTrack(list(coverage, gene_track, domain_track, transcript_track), start = highlight_start, end = highlight_end, col = "transparent", fill = "#AE7FC6", inBackground = FALSE, chromosome = fusion)
 
     # Create PDF
     pdf_width <- as.integer(user_input$pdf_width)
