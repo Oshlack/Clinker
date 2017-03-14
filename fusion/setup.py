@@ -58,6 +58,9 @@ def programInput(user_input):
 				pos = user_input[argument].split(",")
 			elif command == 4:
 				resources = user_input[argument]
+				st_location = resources+'/hg38_genCode24_st.fasta'
+				annotation_location = resources+'/hg38_genCode24_st-sorted-exons.gtf'
+				protein_location = resources+'/hg38_genCode24_pfam-map.bed'
 			elif command == 5:
 				delimiter = user_input[argument]
 			elif command == 6:
@@ -82,6 +85,7 @@ def programInput(user_input):
 		st_location = resources+'/hg38_genCode24_st.fasta'
 		annotation_location = resources+'/hg38_genCode24_st-sorted-exons.gtf'
 		protein_location = resources+'/hg38_genCode24_pfam-map.bed'
+
 
 	if "genome_build" in locals():
 		if genome_build == "19":

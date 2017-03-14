@@ -112,7 +112,8 @@ if(binding.variables.containsKey("competitive")){
 	Setup pipeline parameters
 ===========================================================*/
 
-fst_program = "/usr/local/installed/clinker/1.0/python-2.7/workflow" // location of this program, i.e. /path/to/program/, default is level up from this script
+fst_program = "/usr/local/installed/clinker/1.1/python-2.7" // location of this program, i.e. /path/to/program/, default is level up from this script
+resources = "/usr/local/installed/clinker/1.1/python-2.7/resources"
 threads = "1" // How many threads should the aligner use
 
 /*===========================================================
@@ -135,9 +136,9 @@ reference_folder = fst_output_folder+"/reference"
 generate_fst = {
 	produce("$fst_output_folder/reference/fst_reference.fasta") {
 		if(fusion_finder){
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion -st $resources"
 		} else {
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -st $resources"
 		}
 	}
 }
@@ -147,8 +148,7 @@ star_genome_gen = {
     doc "Generate STAR genome index"
 
     produce("$genome_folder/Genome") {
-	    exec """
-	        STAR --runMode genomeGenerate
+	    exec """STAR --runMode genomeGenerate
 				--runThreadN $threads
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
@@ -204,7 +204,7 @@ normalise = {
 			exec "echo Normalisation Complete"
 
 		}
-  }
+  	}
 }
 
 
@@ -225,7 +225,7 @@ prepare_plot = {
 				output.dir = "$alignment_folder/$folder_name/$fusion_friendly"
 				String new_alignment = "$alignment_folder/$folder_name"
 
-				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder"
+				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder $fst_program/plotit"
 
 			}
 

@@ -8,6 +8,7 @@ fusion_friendly=$3
 annotation_folder=$4
 alignment_folder=$5
 reference_folder=$6
+fst_program=$7
 #------------------------------------------------------------------------------------------
 # Make a fusion folder directory
 #------------------------------------------------------------------------------------------
@@ -49,4 +50,4 @@ samtools index $fusion_folder/split_reads.bam
 # Create SJ.Tab.out
 #------------------------------------------------------------------------------------------
 samtools view -h -o $fusion_folder/${fusion_friendly}.sam $fusion_folder/${fusion_friendly}_lt15.bam
-awk -f /mnt/storage/guest/breon/final/plotit/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
+awk -f $fst_program/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt

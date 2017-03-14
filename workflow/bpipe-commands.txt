@@ -1,0 +1,14 @@
+bpipe \
+-p out="/group/bioi1/breons/Clinker/test/results" \
+-p caller="/group/bioi1/breons/Clinker/test/caller/bcr_abl1.csv" \
+-p col="1,2,3,4" \
+-p del="c" \
+-p genome="19" \
+-p print="true" \
+-p fusions="BCR:ABL1" \
+-p pdf_width="9" \
+-p pdf_height="16" \
+-p sizing="1,3,1,2,4,2" \
+-p competitive="false" \
+$CLINKERDIR/clinkerm.pipe \
+/group/bioi1/breons/Clinker/test/fastq/*.fastq.gz
