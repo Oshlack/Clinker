@@ -243,13 +243,28 @@ prepare <- function(){
     transcript_booundaries <- transcript_file[,c(1,4,5)]
     colnames(transcript_booundaries) <- c("chromosomes", "start", "end")
 
-    junctions_file <- as.data.frame(read.table(locations$junctions))
+    junctions_read <- try(read.table(locations$junctions))
+    if(class(junctions_read)=='try-error') {
+        print("There are no fusion junctions found in this gene pair.")
+        print("Terminating plotting for this fusion.")
+        return()
+    }
+
+    junctions_file <- as.data.frame(junctions_read)
     fusion_junctions <- junctions_file[junctions_file[,2] <= breakpoint & junctions_file[,3] > breakpoint, , drop=FALSE]
+
+    if(nrow(fusion_junctions) == 0){
+        print("There are no fusion junctions found in this gene pair.")
+        print("Terminating plotting for this fusion.")
+        return()
+    }
 
     unique <- fusion_junctions[4]
     multi <- fusion_junctions[5]
     fusion_junctions$support <- unique + multi
+
     #fusion_junction <- fusion_junctions[fusion_junctions$support == max(fusion_junctions$support), , drop=FALSE]
+    print(fusion_junctions$support)
     fusion_junction <- fusion_junctions[fusion_junctions$support > 3, , drop=FALSE]
 
     fusion_frame_name <- c(fusion, fusion)
@@ -260,6 +275,7 @@ prepare <- function(){
     protein_map_file <- as.data.frame(read.table(locations$proteins))
     protein_map_filtered <- protein_map_file[protein_map_file[,1] == fusion, , drop=FALSE]
     colnames(protein_map_filtered) <- c("chromosomes", "start", "end", "domain")
+
 
     files <- list(  genes = gene_file,
                     exons = exon_filtered,
@@ -293,6 +309,8 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
 
     #transcript_filter <- GRanges(fusion, IRanges(start = sashimi_filter_start, end = sashimi_filter_end))
 
+
+
     # Create Tracks
     splice_junction_track  <- AlignmentsTrack(locations$alignment_filtered, sashimiScore = 10, fontsize = 10, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#D7D4E4", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
     split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, sashimiScore = 2, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
@@ -306,7 +324,7 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
     exon_track <- AnnotationTrack(files$exons, fontsize = 12, fontsize.group = 8, showFeatureId = TRUE, featureAnnotation = "group", size = 0.1, just.group = "left", fontcolor.item = "#000000", col="black", background.title = "#1d3c66", title.width = 0.1, chromosome = fusion, group = exon_group$group, name="Exons", size = 0.001, stacking = "dense", mergeGroups = FALSE)
     gene_axis_track <- GenomeAxisTrack(fontsize = 12, chromosome = fusion, add53 = TRUE, add35 = TRUE)
     feature(gene_track) <- c(geneBoundaries(files))
-    highlights <- HighlightTrack(list(coverage, gene_track, domain_track, transcript_track), start = highlight_start, end = highlight_end, col = "transparent", fill = "#AE7FC6", inBackground = FALSE, chromosome = fusion)
+    highlights <- HighlightTrack(list(coverage, gene_track, domain_track, transcript_track), start = highlight_start, end = highlight_end, col = "transparent", fill = "#ff6d6d", inBackground = FALSE, chromosome = fusion)
 
     # Create PDF
     pdf_width <- as.integer(user_input$pdf_width)

@@ -4,7 +4,6 @@
 
 	Author: Breon Schmidt
 	Version: 1.1
-	Notes: Contains no queue system
 
 ===========================================================*/
 
@@ -114,7 +113,7 @@ if(binding.variables.containsKey("competitive")){
 
 fst_program = "/usr/local/installed/clinker/1.1/python-2.7" // location of this program, i.e. /path/to/program/, default is level up from this script
 resources = "/usr/local/installed/clinker/1.1/python-2.7/resources"
-threads = "1" // How many threads should the aligner use
+threads = "4" // How many threads should the aligner use
 
 /*===========================================================
 	Setup pipeline paths
@@ -153,7 +152,7 @@ star_genome_gen = {
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
 				--limitGenomeGenerateRAM 36000000000
-				--genomeSAindexNbases 5"""
+				--genomeSAindexNbases 5""","stargen"
     }
 }
 
@@ -181,7 +180,7 @@ star_align = {
 				--runThreadN $threads
 				--outFileNamePrefix "$output.dir/"
 				--limitBAMsortRAM 20000000000
-			"""
+			""","star1pass"
 	    }
 	}
 }
@@ -240,7 +239,7 @@ plot_fusion = {
 	for(fusion_name in fusion){
 
 		fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
-
+m/
 		from("*.fastq.gz") {
 			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("${fusion_friendly}.pdf") {
 
