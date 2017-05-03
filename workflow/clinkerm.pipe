@@ -3,7 +3,7 @@
 	C L I N K E R  P I P E L I N E
 
 	Author: Breon Schmidt
-	Version: 1.1
+	Version: 1.2
 
 ===========================================================*/
 
@@ -59,6 +59,20 @@ if(binding.variables.containsKey("caller")){
 	fusion_finder = true // if false, gene names listed via the "fusion" variable below
 }
 
+if(binding.variables.containsKey("norm")){
+
+	normalisation = norm;
+
+	if(normalisation != "RPM" && normalisation != "RPKM"){
+		print "Please enter a valid normalisation method (RPM/RPKM)";
+		System.exit(0)
+	}
+
+} else {
+	normalisation = "RPM"	
+}
+
+
 if(binding.variables.containsKey("print")){
 
 	if(print){
@@ -67,7 +81,7 @@ if(binding.variables.containsKey("print")){
 		find_fusion = true
 
 		if(binding.variables.containsKey("fusions")){
-			fusion = [fusions] //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
+			fusion = fusions.split(","); //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
 		} else {
 			print "Please insert a comma delimited list of fusions"
 			System.exit(0)
@@ -107,13 +121,18 @@ if(binding.variables.containsKey("competitive")){
 	competitive = false
 }
 
+if(binding.variables.containsKey("threads")){
+	threads = threads
+} else {
+	threads = "1"
+}
+
 /*===========================================================
 	Setup pipeline parameters
 ===========================================================*/
 
 fst_program = "/usr/local/installed/clinker/1.1/python-2.7" // location of this program, i.e. /path/to/program/, default is level up from this script
 resources = "/usr/local/installed/clinker/1.1/python-2.7/resources"
-threads = "4" // How many threads should the aligner use
 
 /*===========================================================
 	Setup pipeline paths
@@ -199,7 +218,13 @@ normalise = {
 
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
 			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
-			exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads"
+
+			if(normalisation=="RPKM"){
+				exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads"
+			} else if(normalisation=="RPM"){
+				exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads --scaleFactor 0.001"
+			}
+			
 			exec "echo Normalisation Complete"
 
 		}
