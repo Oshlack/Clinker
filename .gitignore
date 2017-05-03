@@ -6,4 +6,3 @@ tests/
 workflow/clinkerm.groovy
 workflow/bpipe.config
 workflow/clinkerm.pipe
-workflow/clinkerm.pipe
