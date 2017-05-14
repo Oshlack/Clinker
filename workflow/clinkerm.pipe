@@ -59,19 +59,6 @@ if(binding.variables.containsKey("caller")){
 	fusion_finder = true // if false, gene names listed via the "fusion" variable below
 }
 
-if(binding.variables.containsKey("norm")){
-
-	normalisation = norm;
-
-	if(normalisation != "RPM" && normalisation != "RPKM"){
-		print "Please enter a valid normalisation method (RPM/RPKM)";
-		System.exit(0)
-	}
-
-} else {
-	normalisation = "RPM"	
-}
-
 
 if(binding.variables.containsKey("print")){
 
@@ -199,33 +186,33 @@ star_align = {
 				--runThreadN $threads
 				--outFileNamePrefix "$output.dir/"
 				--limitBAMsortRAM 20000000000
+				--outWigType bedGraph 
+				--outWigNorm RPM 
+				--outWigStrand Unstranded
 			""","star1pass"
+
+			exec "mv $output.dir/Signal.UniqueMultiple.str1.out.bg $output.dir/coverage_rpm.bedgraph"
+			exec "mv $output.dir/Signal.Unique.str1.out.bg $output.dir/coverage_rpm_unique.bedgraph"
+
 	    }
 	}
 }
 
 /*--Prep normalise--*/
 
-normalise = {
+index_bams = {
 
 	from("*.fastq.gz") {
-		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("coverage_rpm.bedgraph") {
+		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("Aligned.sortedByCoord.out.bam.bai") {
 
 			String R1 = inputs[0];
 			String file_name = R1.split("/")[-1]
 			String folder_name = file_name.split("_R1")[0]
 			output.dir = "$alignment_folder/$folder_name"
 
+			exec "echo 'Indexing Alignment ($output.dir/Aligned.sortedByCoord.out.bam)'"
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
-			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
-
-			if(normalisation=="RPKM"){
-				exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads"
-			} else if(normalisation=="RPM"){
-				exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads --scaleFactor 0.001"
-			}
-			
-			exec "echo Normalisation Complete"
+			exec "echo 'Index Complete'"
 
 		}
   	}
@@ -264,7 +251,7 @@ plot_fusion = {
 	for(fusion_name in fusion){
 
 		fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
-m/
+
 		from("*.fastq.gz") {
 			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("${fusion_friendly}.pdf") {
 
@@ -294,7 +281,7 @@ m/
 
 if(find_fusion){
 	Bpipe.run {
-		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + normalise + prepare_plot + plot_fusion]
+		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + index_bams + prepare_plot + plot_fusion]
 	}
 } else {
 	Bpipe.run {

@@ -4,10 +4,11 @@
 #------------------------------------------------------------------------------------------
 fusion=$1
 fusion_folder=$2
-fusion_friendly=${fofusiono/:/_}
+fusion_friendly=${fusion/:/_}
 results_folder=$3
 fastq_1=$4
 fastq_2=$5
+threads=$6
 annotation_folder=$results_folder'/annotation'
 alignment_folder=$results_folder'/alignment'
 alignment_folder_close=$results_folder'/alignment/'
@@ -18,13 +19,13 @@ fst=$reference_folder'/fst_reference.fasta'
 #------------------------------------------------------------------------------------------
 # Generate Genome & Align
 #------------------------------------------------------------------------------------------
-STAR --runMode genomeGenerate --runThreadN 1 --genomeDir $genome_folder --genomeFastaFiles $fst --genomeSAindexNbases 5
-STAR --genomeDir $genome_folder --readFilesIn $fastq_1 $fastq_2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --runThreadN 1 --outFileNamePrefix $alignment_folder_close --limitBAMsortRAM 1004462444
+STAR --runMode genomeGenerate --runThreadN $threads --genomeDir $genome_folder --genomeFastaFiles $fst --genomeSAindexNbases 5
+STAR --genomeDir $genome_folder --readFilesIn $fastq_1 $fastq_2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --runThreadN $threads --outFileNamePrefix $alignment_folder_close --limitBAMsortRAM 1004462444
 #------------------------------------------------------------------------------------------
 # Generate Genome & Align
 #------------------------------------------------------------------------------------------
 samtools index $aligned
-bamCoverage -b $aligned --normalizeUsingRPKM -of bedgraph --binSize 1 -o $alignment_folder/coverage_rpm.bedgraph
+bamCoverage -b $aligned --normalizeUsingRPKM -of bedgraph --binSize 1 --scaleFactor 0.001 -o $alignment_folder/coverage_rpm.bedgraph
 #------------------------------------------------------------------------------------------
 # Make a fusion folder directory
 #------------------------------------------------------------------------------------------
@@ -66,4 +67,4 @@ samtools index $fusion_folder/split_reads.bam
 # Create SJ.Tab.out
 #------------------------------------------------------------------------------------------
 samtools view -h -o $fusion_folder/${fusion_friendly}.sam $fusion_folder/${fusion_friendly}_lt15.bam
-awk -f /mnt/storage/guest/breon/final/plotit/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
+awk -f sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
