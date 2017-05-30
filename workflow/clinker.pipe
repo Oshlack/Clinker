@@ -18,6 +18,73 @@
 	Get user defined variables or define defaults
 ===========================================================*/
 
+/*-- Help me Obi Wan! --*/
+
+if(binding.variables.containsKey("help")){
+
+	print "Welcome to Clinker's bpipe help!"
+	print "--------------------------------------------------------------------"
+	print "R U N N I N G   T H E   P I P E L I N E"
+	print "--------------------------------------------------------------------\n"
+
+	print "To run this pipeline, simply use the following format:"
+	print "bpipe 'parameter list, each starting with a -p' clinker.pipe path/to/sample_R1.fastq.gz path/to/sample_R2.fastq.gz"
+
+	print "\n--------------------------------------------------------------------"
+	print "P A R A M E T E R S"
+	print "Note: All parameters must start with a -p. i.e '-p print=true'"
+	print "--------------------------------------------------------------------\n"
+
+	print "out\t\tpath for where you would like the Clinker results to go."
+
+	// Fusion caller results
+	print "caller\t\tpath of where the fusion callers results are."
+
+	print "col\t\tComma delimited list of 2/4 integers that indicate the location"
+	print "\t\t\tof the chr1,breakpoint1,chr2,breakpoint2 columns in the fusion"
+	print "\t\t\tcaller result. i.e. col=1,2,3,4 or col=1,2 if column contains"
+	print "\t\t\tboth chromosome number and breakpoint number in a single field,"
+	print "\t\t\ti.e. 'chr1:12345'"
+
+	print "del\t\tspecify what delimiter is used in the fusion caller."
+	print "\t\t\toptions: 'c' (comma), 't' (tabbed)"
+	print "genome\t\t specify what genome you used in the fusion caller."
+	print "\t\t\toptions: '19' (hg19), '38' (hg38)"
+
+	// Additional
+	print "competitive\t\tInclude all genes in the fused superTranscript? (recommended)"
+	print "\t\t\ti.e. include both BCR ABL1 and BCR:ABL1?"
+	print "\t\t\toptions: 'true' (enabled), 'false' (disabled, much quicker)"
+
+	// Print Output
+	print "print\t\tCreate a Gviz plot from a supplied list of fusion genes."
+	print "\t\t\toptions: 'true' (enabled), 'false' (disabled, much quicker)"
+
+	print "fusions\t\tcomma delimited list of colon seperated fusion genes."
+	print "\t\t\tThese genes will be subject to filtering and PDF printing."
+	print "example: -p fusions='gene1:gene2,gene3:gene4'"
+
+	// PDF size
+	print "pdf_width\t\tInteger that specifies the width (inches) of the Gviz PDF."
+	print "pdf_height\t\tInteger that specifies the height (inches) of the Gviz PDF."
+	print "sizing\t\tComma delimited list of 6 integers that specify the relative size"
+	print "\t\t\tof each track in the Gviz pdf."
+	print "\t\t\texample: sizing='1,3,1,2,4,2' (axis,coverage,genes,proteins,transcripts,junctions)"
+	print "\t\t\tIn this example, coverage will be 3 x larger than axis and genes."
+
+	// Performance
+	print "\n\nNOTE: carefully adjust the following parameters, maximum values for each stage set in bpipe.config"
+	print "The following parameters are for EACH sample in parallel. i.e."
+	print "If you want to use a maximum of 6 threads but are running 3 samples"
+	print "in parallel (default), threads='2' (2 threads for each sample)."
+
+	print "threads\t\tthe number (integer) of threads/processes to use."
+	print "genome_mem\t\tMemory allocated for STAR's genome generation (bytes)."
+	print "align_mem\t\tMemory allocated for STAR's aligner (bytes)."
+
+	System.exit(0)
+}
+
 /*-- Define where all the results will live, i.e. /path/to/results/ --*/
 
 if(binding.variables.containsKey("out")){
@@ -58,19 +125,6 @@ if(binding.variables.containsKey("caller")){
 
 } else {
 	fusion_finder = true // if false, gene names listed via the "fusion" variable below
-}
-
-if(binding.variables.containsKey("norm")){
-
-	normalisation = norm;
-
-	if(normalisation != "RPM" && normalisation != "RPKM"){
-		print "Please enter a valid normalisation method (RPM/RPKM)";
-		System.exit(0)
-	}
-
-} else {
-	normalisation = "RPM"	
 }
 
 
@@ -116,18 +170,28 @@ if(binding.variables.containsKey("print")){
 	}
 }
 
-if(binding.variables.containsKey("threads")){
-	fst_output_folder = out
+if(binding.variables.containsKey("competitive")){
+	competitive = true
 } else {
-	// Create results folder in current location
-	fst_output_folder = "./results"
-	new File($fst_output_folder).mkdirs()
+	competitive = false
 }
 
 if(binding.variables.containsKey("threads")){
 	threads = threads
 } else {
 	threads = "1"
+}
+
+if(binding.variables.containsKey("genome_mem")){
+	genome_mem = genome_mem
+} else {
+	genome_mem = "36000000000"
+}
+
+if(binding.variables.containsKey("align_mem")){
+	align_mem = align_mem
+} else {
+	align_mem = "20000000000"
 }
 
 
@@ -174,7 +238,7 @@ star_genome_gen = {
 				--runThreadN $threads
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
-				--limitGenomeGenerateRAM 36000000000
+				--limitGenomeGenerateRAM $genome_mem
 				--genomeSAindexNbases 5"""
     }
 }
@@ -202,39 +266,38 @@ star_align = {
 				--outSAMtype BAM SortedByCoordinate
 				--runThreadN $threads
 				--outFileNamePrefix "$output.dir/"
-				--limitBAMsortRAM 20000000000
-			"""
+				--limitBAMsortRAM $align_mem
+				--outWigType bedGraph
+				--outWigNorm RPM
+				--outWigStrand Unstranded
+			""","star1pass"
+
+			exec "mv $output.dir/Signal.UniqueMultiple.str1.out.bg $output.dir/coverage_rpm.bedgraph"
+			exec "mv $output.dir/Signal.Unique.str1.out.bg $output.dir/coverage_rpm_unique.bedgraph"
+
 	    }
 	}
 }
 
-/*--Prep normalise--*/
+/*--Prep --*/
 
-normalise = {
+index_bams = {
 
 	from("*.fastq.gz") {
-		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("coverage_rpm.bedgraph") {
+		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("Aligned.sortedByCoord.out.bam.bai") {
 
 			String R1 = inputs[0];
 			String file_name = R1.split("/")[-1]
 			String folder_name = file_name.split("_R1")[0]
 			output.dir = "$alignment_folder/$folder_name"
 
+			exec "echo 'Indexing Alignment ($output.dir/Aligned.sortedByCoord.out.bam)'"
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
-			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
-
-			if(normalisation=="RPKM"){
-				exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads"
-			} else if(normalisation=="RPM"){
-				exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph -p $threads --scaleFactor 0.001"
-			}
-
-			exec "echo Normalisation Complete"
+			exec "echo 'Index Complete'"
 
 		}
-  }
+  	}
 }
-
 
 /*--Prep fusion files--*/
 
@@ -287,7 +350,7 @@ plot_fusion = {
 
 				output.dir = plot_path
 
-				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_height $pdf_width $proportion $new_alignment $folder_name"
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_width $pdf_height $proportion $new_alignment $folder_name"
 
 			}
 		}
@@ -298,7 +361,7 @@ plot_fusion = {
 
 if(find_fusion){
 	Bpipe.run {
-		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + normalise + prepare_plot + plot_fusion]
+		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + index_bams + prepare_plot + plot_fusion]
 	}
 } else {
 	Bpipe.run {

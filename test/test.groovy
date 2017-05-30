@@ -9,7 +9,7 @@ fst_output_folder = "results" // where all the results will live
 
 /*--Inputs--*/
 fusion_finder_output = "caller/bcr_abl1.csv" // Location of fusion finders output file
-column_positions = "1 2 3 4" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
+column_positions = "1,2,3,4" // Location of chromosome 1, break point 1, chromosome 2, breakpoint 2, columns in above file
 delimiter = "c" // is the above file tab or comma delimited (t or c, c if ommited)
 genome = "19" // was the above file generated with hg19 or hg38 (19, 38)
 competitive = false
@@ -55,14 +55,14 @@ star_genome_gen = {
     //Generate STAR genome index
     doc "Generate STAR genome index"
 
-    produce("$genome_folder/Genome") {
+	produce("$genome_folder/Genome") {
 	    exec """
 	        STAR --runMode genomeGenerate
 				--runThreadN $threads
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
-				--limitGenomeGenerateRAM 34000000000
-				--genomeSAindexNbases 5""","stargenind"
+				--limitGenomeGenerateRAM 1100000000
+				--genomeSAindexNbases 5"""
     }
 }
 
@@ -89,33 +89,38 @@ star_align = {
 				--outSAMtype BAM SortedByCoordinate
 				--runThreadN $threads
 				--outFileNamePrefix "$output.dir/"
-				--limitBAMsortRAM 20000000000
+				--limitBAMsortRAM 1100000000
+				--outWigType bedGraph
+				--outWigNorm RPM
+				--outWigStrand Unstranded
 			""","star1pass"
+
+			exec "mv $output.dir/Signal.UniqueMultiple.str1.out.bg $output.dir/coverage_rpm.bedgraph"
+			exec "mv $output.dir/Signal.Unique.str1.out.bg $output.dir/coverage_rpm_unique.bedgraph"
+
 	    }
 	}
 }
 
-/*--Prep normalise--*/
+/*--Prep --*/
 
-normalise = {
+index_bams = {
 
 	from("*.fastq.gz") {
-		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("coverage_rpm.bedgraph") {
+		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("Aligned.sortedByCoord.out.bam.bai") {
 
 			String R1 = inputs[0];
 			String file_name = R1.split("/")[-1]
 			String folder_name = file_name.split("_R1")[0]
 			output.dir = "$alignment_folder/$folder_name"
 
+			exec "echo 'Indexing Alignment ($output.dir/Aligned.sortedByCoord.out.bam)'"
 			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
-			exec "echo 'Normalising Coverage ($output.dir/coverage_rpm.bedgraph)'"
-			exec "bamCoverage -b $output.dir/Aligned.sortedByCoord.out.bam --normalizeUsingRPKM -of bedgraph --binSize 1 -o $output.dir/coverage_rpm.bedgraph"
-			exec "echo Normalisation Complete"
+			exec "echo 'Index Complete'"
 
 		}
-  }
+  	}
 }
-
 
 /*--Prep fusion files--*/
 
@@ -168,7 +173,7 @@ plot_fusion = {
 
 				output.dir = plot_path
 
-				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_height $pdf_width $proportion $new_alignment $folder_name"
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_width $pdf_height $proportion $new_alignment $folder_name"
 
 			}
 		}
@@ -179,7 +184,7 @@ plot_fusion = {
 
 if(find_fusion){
 	Bpipe.run {
-		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + normalise + prepare_plot + plot_fusion]
+		generate_fst + star_genome_gen + "%_*.fastq.gz"*[star_align + index_bams + prepare_plot + plot_fusion]
 	}
 } else {
 	Bpipe.run {

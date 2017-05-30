@@ -5,10 +5,7 @@
 # 	Authors: Breon Schmidt & Anthony Hawkins
 # 	Date: 29 Nov 2016
 #
-# 	Description
-#
-# 	INPUT: X
-# 	OUTPUT: Y
+# 	NOTE: Excuse my R...
 #
 #===========================================================
 
@@ -307,16 +304,15 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
     highlight_start <- unname(unlist(files$junctions["start"]))
     highlight_end <- unname(unlist(files$junctions["end"]))
 
-    #transcript_filter <- GRanges(fusion, IRanges(start = sashimi_filter_start, end = sashimi_filter_end))
-
-
-
-    # Create Tracks
+    # Splice junction tracks
     splice_junction_track  <- AlignmentsTrack(locations$alignment_filtered, sashimiScore = 10, fontsize = 10, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#D7D4E4", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
     split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, sashimiScore = 2, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
     sashimi_plot <- OverlayTrack(trackList = list(split_read_junction_track, splice_junction_track, split_read_junction_track), background.title = "#6e65ad", name = " ")
 
+    # Normalised coverage track
     coverage <- DataTrack(locations$alignment, fontsize = 10, background.title = "#6e65ad", name = "Coverage", chromosome = fusion, type=c("histogram"), fill="#6e65ad", col.histogram = "#6e65ad")
+
+    # Annotation tracks
 
     gene_track <- AnnotationTrack(locations$genes, fontsize = 12, showFeatureId = TRUE, chromosome = fusion, col="#2b749a", background.title = "#3983AA", group = gene_group$group, name="Genes", stacking="hide")
     domain_track <- AnnotationTrack(files$proteins, fill="#f05f3b", col = "#f05f3b", fontsize = 12, groupAnnotation = "id", showId=TRUE, just.group = "below", fontcolor.item = "#000000", background.title = "#f05f3b", title.width = 0.1,  chromosome = fusion, id= protein_id$group, group = protein_group$group, name="Domains")

@@ -2,6 +2,7 @@
 #------------------------------------------------------------------------------------------
 # Get variables
 #------------------------------------------------------------------------------------------
+current_directory=`dirname $0`
 fusion=$1
 fusion_folder=$2
 fusion_friendly=$3
@@ -50,4 +51,4 @@ samtools index $fusion_folder/split_reads.bam
 # Create SJ.Tab.out
 #------------------------------------------------------------------------------------------
 samtools view -h -o $fusion_folder/${fusion_friendly}.sam $fusion_folder/${fusion_friendly}_lt15.bam
-awk -f $fst_program/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
+awk -f $current_directory/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt

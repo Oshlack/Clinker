@@ -2,10 +2,12 @@
 #------------------------------------------------------------------------------------------
 # Get variables
 #------------------------------------------------------------------------------------------
+current_directory=`dirname $0`
+test_folder=`pwd -P`
 fusion=$1
 fusion_folder=$2
 fusion_friendly=${fusion/:/_}
-results_folder=$3
+results_folder=$test_folder/$3
 fastq_1=$4
 fastq_2=$5
 threads=$6
@@ -19,13 +21,14 @@ fst=$reference_folder'/fst_reference.fasta'
 #------------------------------------------------------------------------------------------
 # Generate Genome & Align
 #------------------------------------------------------------------------------------------
-STAR --runMode genomeGenerate --runThreadN $threads --genomeDir $genome_folder --genomeFastaFiles $fst --genomeSAindexNbases 5
-STAR --genomeDir $genome_folder --readFilesIn $fastq_1 $fastq_2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --runThreadN $threads --outFileNamePrefix $alignment_folder_close --limitBAMsortRAM 1004462444
+STAR --runMode genomeGenerate --runThreadN $threads --genomeDir $genome_folder --genomeFastaFiles $fst --genomeSAindexNbases 5 --limitGenomeGenerateRAM 1100000000
+STAR --genomeDir $genome_folder --readFilesIn $fastq_1 $fastq_2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --runThreadN $threads --outFileNamePrefix $alignment_folder_close --outWigType bedGraph --outWigNorm RPM --outWigStrand Unstranded --limitBAMsortRAM 1100000000
 #------------------------------------------------------------------------------------------
 # Generate Genome & Align
 #------------------------------------------------------------------------------------------
 samtools index $aligned
-bamCoverage -b $aligned --normalizeUsingRPKM -of bedgraph --binSize 1 --scaleFactor 0.001 -o $alignment_folder/coverage_rpm.bedgraph
+mv $alignment_folder/Signal.UniqueMultiple.str1.out.bg $alignment_folder/coverage_rpm.bedgraph
+mv $alignment_folder/Signal.Unique.str1.out.bg $alignment_folder/coverage_rpm_unique.bedgraph
 #------------------------------------------------------------------------------------------
 # Make a fusion folder directory
 #------------------------------------------------------------------------------------------
@@ -67,4 +70,4 @@ samtools index $fusion_folder/split_reads.bam
 # Create SJ.Tab.out
 #------------------------------------------------------------------------------------------
 samtools view -h -o $fusion_folder/${fusion_friendly}.sam $fusion_folder/${fusion_friendly}_lt15.bam
-awk -f sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
+awk -f $current_directory/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
