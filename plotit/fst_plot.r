@@ -205,8 +205,13 @@ prepare <- function(){
     # Create fusion folder in results
     fusion_friendly <- gsub(":", "_", fusion)
 
+    old_name = paste(alignment_folder, "/Signal.UniqueMultiple.str1.out.bg", sep="/")
+    new_name = paste(alignment_folder, "/coverage_rpm.bedgraph", sep="/")
+
+    file.rename(old_name, new_name)
+
     # Locate alignment and annotation files
-    alignment_location <- paste(alignment_folder, "/coverage_rpm.bedgraph", sep="/")
+    alignment_location <- new_name
     alignment_location_filtered <- paste(fusion_location, "reads.bam", sep="/")
     splice_reads_location <- paste(fusion_location, "split_reads.bam", sep="/")
     gene_location <- paste(results_location, "annotation/gene_boundaries.bed", sep="/")
@@ -261,7 +266,6 @@ prepare <- function(){
     fusion_junctions$support <- unique + multi
 
     #fusion_junction <- fusion_junctions[fusion_junctions$support == max(fusion_junctions$support), , drop=FALSE]
-    print(fusion_junctions$support)
     fusion_junction <- fusion_junctions[fusion_junctions$support > 3, , drop=FALSE]
 
     fusion_frame_name <- c(fusion, fusion)
