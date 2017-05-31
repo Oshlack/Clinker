@@ -3,7 +3,8 @@
 	C L I N K E R  P I P E L I N E
 
 	Author: Breon Schmidt
-	Version: 1.2
+	Version: 1.1
+	Notes: Contains no queue system
 
 ===========================================================*/
 
@@ -16,6 +17,10 @@
 /*===========================================================
 	Get user defined variables or define defaults
 ===========================================================*/
+
+/*-- Help me Obi Wan! --*/
+
+
 
 /*-- Define where all the results will live, i.e. /path/to/results/ --*/
 
@@ -114,12 +119,24 @@ if(binding.variables.containsKey("threads")){
 	threads = "1"
 }
 
+if(binding.variables.containsKey("genome_mem")){
+	genome_mem = genome_mem
+} else {
+	genome_mem = "36000000000"
+}
+
+if(binding.variables.containsKey("align_mem")){
+	align_mem = align_mem
+} else {
+	align_mem = "20000000000"
+}
+
 /*===========================================================
 	Setup pipeline parameters
 ===========================================================*/
 
-fst_program = "/usr/local/installed/clinker/1.1/python-2.7" // location of this program, i.e. /path/to/program/, default is level up from this script
-resources = "/usr/local/installed/clinker/1.1/python-2.7/resources"
+fst_program = "/group/bioi1/breons/Clinker/src/v1.2" // location of this program, i.e. /path/to/program/, default is level up from this script
+resources = "/group/bioi1/breons/Clinker/src/v1.2/resources"
 
 /*===========================================================
 	Setup pipeline paths
@@ -141,9 +158,9 @@ reference_folder = fst_output_folder+"/reference"
 generate_fst = {
 	produce("$fst_output_folder/reference/fst_reference.fasta") {
 		if(fusion_finder){
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion -st $resources"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion"
 		} else {
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -st $resources"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive"
 		}
 	}
 }
@@ -153,12 +170,13 @@ star_genome_gen = {
     doc "Generate STAR genome index"
 
     produce("$genome_folder/Genome") {
-	    exec """STAR --runMode genomeGenerate
+	    exec """
+	        STAR --runMode genomeGenerate
 				--runThreadN $threads
 				--genomeDir $genome_folder
 				--genomeFastaFiles $reference_folder/fst_reference.fasta
-				--limitGenomeGenerateRAM 36000000000
-				--genomeSAindexNbases 5""","stargen"
+				--limitGenomeGenerateRAM $genome_mem
+				--genomeSAindexNbases 5"""
     }
 }
 
@@ -185,20 +203,17 @@ star_align = {
 				--outSAMtype BAM SortedByCoordinate
 				--runThreadN $threads
 				--outFileNamePrefix "$output.dir/"
-				--limitBAMsortRAM 20000000000
-				--outWigType bedGraph 
-				--outWigNorm RPM 
+				--limitBAMsortRAM $align_mem
+				--outWigType bedGraph
+				--outWigNorm RPM
 				--outWigStrand Unstranded
 			""","star1pass"
-
-			exec "mv $output.dir/Signal.UniqueMultiple.str1.out.bg $output.dir/coverage_rpm.bedgraph"
-			exec "mv $output.dir/Signal.Unique.str1.out.bg $output.dir/coverage_rpm_unique.bedgraph"
 
 	    }
 	}
 }
 
-/*--Prep normalise--*/
+/*--Prep --*/
 
 index_bams = {
 
@@ -218,7 +233,6 @@ index_bams = {
   	}
 }
 
-
 /*--Prep fusion files--*/
 
 prepare_plot = {
@@ -236,7 +250,7 @@ prepare_plot = {
 				output.dir = "$alignment_folder/$folder_name/$fusion_friendly"
 				String new_alignment = "$alignment_folder/$folder_name"
 
-				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder $fst_program/plotit"
+				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder"
 
 			}
 
@@ -270,7 +284,7 @@ plot_fusion = {
 
 				output.dir = plot_path
 
-				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_height $pdf_width $proportion $new_alignment $folder_name"
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_width $pdf_height $proportion $new_alignment $folder_name"
 
 			}
 		}
