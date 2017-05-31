@@ -95,9 +95,6 @@ star_align = {
 				--outWigStrand Unstranded
 			""","star1pass"
 
-			exec "mv $output.dir/Signal.UniqueMultiple.str1.out.bg $output.dir/coverage_rpm.bedgraph"
-			exec "mv $output.dir/Signal.Unique.str1.out.bg $output.dir/coverage_rpm_unique.bedgraph"
-
 	    }
 	}
 }
