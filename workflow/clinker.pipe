@@ -136,7 +136,8 @@ if(binding.variables.containsKey("align_mem")){
 	Setup pipeline parameters
 ===========================================================*/
 
-fst_program = new File ("..").getCanonicalPath() // location of this program, i.e. /path/to/program/, default is level up from this script
+fst_program = System.getenv("CLINKERDIR") // location of this program, i.e. /path/to/program/, default is level up from this script
+resources = fst_program+"/resources/"
 
 /*===========================================================
 	Setup pipeline paths
@@ -158,9 +159,9 @@ reference_folder = fst_output_folder+"/reference"
 generate_fst = {
 	produce("$fst_output_folder/reference/fst_reference.fasta") {
 		if(fusion_finder){
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive -fusionlist $fusion"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -fusionlist $fusion"
 		} else {
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -genome $genome -competitive $competitive"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive"
 		}
 	}
 }
