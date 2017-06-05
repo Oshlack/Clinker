@@ -205,8 +205,8 @@ prepare <- function(){
     # Create fusion folder in results
     fusion_friendly <- gsub(":", "_", fusion)
 
-    old_name = paste(alignment_folder, "/Signal.UniqueMultiple.str1.out.bg", sep="/")
-    new_name = paste(alignment_folder, "/coverage_rpm.bedgraph", sep="/")
+    old_name = paste(alignment_folder, "Signal.UniqueMultiple.str1.out.bg", sep="/")
+    new_name = paste(alignment_folder, "coverage_rpm.bedgraph", sep="/")
 
     file.rename(old_name, new_name)
 
@@ -309,12 +309,12 @@ create <- function(locations, files, results_location, fusion, fusion_friendly, 
     highlight_end <- unname(unlist(files$junctions["end"]))
 
     # Splice junction tracks
-    splice_junction_track  <- AlignmentsTrack(locations$alignment_filtered, sashimiScore = 10, fontsize = 10, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#D7D4E4", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
-    split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, sashimiScore = 2, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = " ")
-    sashimi_plot <- OverlayTrack(trackList = list(split_read_junction_track, splice_junction_track, split_read_junction_track), background.title = "#6e65ad", name = " ")
+    splice_junction_track  <- AlignmentsTrack(locations$alignment_filtered, sashimiScore = 10, sashimiNumbers = TRUE, fontsize = 10, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#D7D4E4", type=c("sashimi"), size = 0.001, lwd = 2, name = "Split Reads", col.axis="#6e65ad")
+    split_read_junction_track  <- AlignmentsTrack(locations$splice, fontsize = 10, sashimiScore = 3, sashimiNumbers = TRUE, chromosome = fusion, background.title = "#6b98d7", isPaired = T, col.sashimi = "#6e65ad", type=c("sashimi"), size = 0.001, lwd = 2, name = "Split Reads", col.axis="#6e65ad")
+    sashimi_plot <- OverlayTrack(trackList = list(split_read_junction_track, splice_junction_track, split_read_junction_track), background.title = "#6e65ad", name = "Split Reads", col.axis="#6e65ad")
 
     # Normalised coverage track
-    coverage <- DataTrack(locations$alignment, fontsize = 10, background.title = "#6e65ad", name = "Coverage", chromosome = fusion, type=c("histogram"), fill="#6e65ad", col.histogram = "#6e65ad")
+    coverage <- DataTrack(locations$alignment, fontsize = 10, background.title = "#6e65ad", name = "Coverage (RPM)", chromosome = fusion, type=c("histogram"), fill="#6e65ad", col.histogram = "#6e65ad")
 
     # Annotation tracks
 
