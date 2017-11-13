@@ -34,7 +34,7 @@ import annotation
 user_input = sys.argv
 
 # Get input
-fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions = setup.programInput(user_input)
+fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header = setup.programInput(user_input)
 
 # Create a hash table of super transcripts
 st_file = open(st_location, 'r')
@@ -50,10 +50,10 @@ else:
 	fusion_results = supplied_fusions
 
 if "pos" in locals():
-	fusions = fusiontools.createFusionList(fusion_results, pos, gene_list_location, st_genes, True, delimiter)
+	fusions = fusiontools.createFusionList(fusion_results, pos, gene_list_location, st_genes, header, delimiter)
 else:
 	pos = [1, 2, 3, 4]
-	fusions = fusiontools.createFusionList(fusion_results, pos, gene_list_location, st_genes, True, delimiter)
+	fusions = fusiontools.createFusionList(fusion_results, pos, gene_list_location, st_genes, header, delimiter)
 
 
 # Create the results folder structure

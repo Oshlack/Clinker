@@ -1,18 +1,58 @@
-/*===========================================================
+/*================================================================================
 
-	C L I N K E R  P I P E L I N E
+      ___         ___             ___         ___         ___         ___     
+     /\  \       /\__\  ___      /\__\       /\__\       /\  \       /\  \    
+    /::\  \     /:/  / /\  \    /::|  |     /:/  /      /::\  \     /::\  \   
+   /:/\:\  \   /:/  /  \:\  \  /:|:|  |    /:/__/      /:/\:\  \   /:/\:\  \  
+  /:/  \:\  \ /:/  /   /::\__\/:/|:|  |__ /::\__\____ /::\~\:\  \ /::\~\:\  \ 
+ /:/__/ \:\__/:/__/ __/:/\/__/:/ |:| /\__/:/\:::::\__/:/\:\ \:\__/:/\:\ \:\__\
+ \:\  \  \/__\:\  \/\/:/  /  \/__|:|/:/  \/_|:|~~|~  \:\~\:\ \/__\/_|::\/:/  /
+  \:\  \      \:\  \::/__/       |:/:/  /   |:|  |    \:\ \:\__\    |:|::/  / 
+   \:\  \      \:\  \:\__\       |::/  /    |:|  |     \:\ \/__/    |:|\/__/  
+    \:\__\      \:\__\/__/       /:/  /     |:|  |      \:\__\      |:|  |    
+     \/__/       \/__/           \/__/       \|__|       \/__/       \|__|    
+
 
 	Author: Breon Schmidt
-	Version: 1.1
-	Notes: Contains no queue system
+	Version: 1.3
 
-===========================================================*/
+================================================================================*/
 
-/*===========================================================
+/*-----------------------------------------------------------
 
-	P I P E L I N E   V A R I A B L E S
+	L O A D 
 
-===========================================================*/
+-----------------------------------------------------------*/
+
+fst_program = System.getenv("CLINKERDIR") // location of this program, i.e. /path/to/program/, default is level up from this script
+resources = fst_program+"/resources/"
+
+/*-----------------------------------------------------------
+
+	V A R I A B L E S
+
+-----------------------------------------------------------*/
+
+
+def getSamplePath(fastq_inputs, String parent_folder){
+
+	// Creates a folder basde on the name of the fastq files
+	String fastq_file = fastq_inputs[0]
+	String file_name = fastq_file.split("/")[-1]
+	String folder_name = file_name.split("_R1")[0]
+	String folder_path = parent_folder+"/"+folder_name
+	new File("$folder_path").mkdirs()
+
+	return [folder_path, folder_name]
+
+}
+
+
+/*-----------------------------------------------------------
+
+	P I P E L I N E
+
+-----------------------------------------------------------*/
 
 /*===========================================================
 	Get user defined variables or define defaults
@@ -20,7 +60,91 @@
 
 /*-- Help me Obi Wan! --*/
 
+if(args == null){
 
+	println "\n================================================"
+	println "\nC L I N K E R    B P I P E    H E L P"
+	println "Version 1.3"
+	println "\n================================================\n"
+
+	println "------------------------------------------------"
+	println "U S A G E: "
+	println "------------------------------------------------\n"
+	println 'export CLINKERDIR=/path/to/clinker/root/'
+	println 'bpipe -p option1="something" -p option2="something_else" [...] $CLINKERDIR/workflow/clinker.pipe /path/to/*.fastq.gz\n\n'
+
+	println "------------------------------------------------"
+	println "O P T I O N S"
+	println "------------------------------------------------"
+
+	println "\n*General----------------------------------------\n"
+	print 'out="/path/to/clinker/output"'
+	println '\t\tWhere do you want Clinker to put its output'
+	print 'st="/path/to/clinker/resources"'
+	println '\t\tFolder with clinker compatiable resources'
+
+	println "\n*Fusion Caller----------------------------------\n"
+	println 'caller="/path/to/fusion/caller/results.csv"\n'
+	print	'fusions=BCR:ABL1,P2RY8:CRLF2'
+	println '\t\tIF no caller option is set, a fst will be made from fusions'
+	println '\t\t\t\t\tentered within the "fusions" paramter. Fusion genes are separated by a :'
+	println '\t\t\t\t\tin a comma delimited list. I.e. BCR:ABL1,P2RY8:CRLF2\n'
+	print 'genome=19 or genome=38'
+	println '\t\t\tGenome version the fusion caller output was created with'
+	println '\t\t\t\t\tDefault=19\n'
+	print 'del=c or del=t'
+	println "\t\t\t\tDelimiter of fusion caller output (c = comma), (t = tab)"
+	println '\t\t\t\t\tDefault=c\n'
+	print 'col=1,2,3,4 or col=1,2'
+	println '\t\t\tColumns in fusion caller output where genomic coordinates reside.'
+	println '\t\t\t\t\t(chr1,breakpoint1,chr2,breakpoint2) OR (chr1:breakpoint1,chr2:breakpoint2)'
+	println '\t\t\t\t\tNote: This is caller specific, i.e. JAFFA col=3,4,5,6'
+	println '\t\t\t\t\tDefault=1,2,3,4.'
+
+	println "\n*FST SuperTranscriptome-------------------------\n"
+	print 'competitive=true/false'
+	println '\t\t\tInclude superTranscripts (not fused) in fusion superTranscriptome'
+	println '\t\t\t\t\tNote: will significantly add time to STAR alignment.'
+	println '\t\t\t\t\tDefault=true.'
+
+	println "\n*STAR-------------------------------------------\n"
+	print 'genome_mem=36000000000'
+	println '\t\t\tMaximum memory usage for STAR genomeGenerate (bytes)'
+	print 'align_mem=20000000000'
+	println '\t\t\tMaximum memory usage for STAR alignment (bytes)'
+	print 'threads=1'
+	println '\t\t\t\tMaximum threads to use with STAR'
+
+	println "\n*PDF Plot---------------------------------------\n"
+	print 'print=false'
+	println '\t\t\t\tPrint PDFs of all specified fusions'
+	print 'pdf_width=16'
+	println '\t\t\t\tPDF width (inches)'
+	print 'pdf_height=9'
+	println '\t\t\t\tPDF height (inches)'
+
+	println "\n*Plot Colours-----------------------------------\n"
+	print 'col_coverage=6e65ad'
+	println "\t\t\tNote: Colours for the final plot, hex code only (no hash)"
+	println 'col_gene1=3983AA'
+	println 'col_gene2=2b749a'
+	println 'col_domains=f05f3b'
+	println 'col_transcript=a1d16e'
+	println 'col_transcript_bg=f2ffe4'
+	println 'col_transcript_border=215A4A'
+	println 'col_junctions=D7D4E4'
+	println 'col_fusions=6e65ad'
+	println 'col_highlights=ff6d6d'
+
+	println "\n\n------------------------------------------------"
+	println "F U R T H E R   I N F O:"
+	println "------------------------------------------------\n"
+	println "Visit: https://github.com/Oshlack/Clinker/wiki/\n\n"
+
+
+
+	System.exit(0)
+}
 
 /*-- Define where all the results will live, i.e. /path/to/results/ --*/
 
@@ -29,7 +153,7 @@ if(binding.variables.containsKey("out")){
 } else {
 	// Create results folder in current location
 	fst_output_folder = "./results"
-	new File($fst_output_folder).mkdirs()
+	new File(fst_output_folder).mkdirs()
 }
 
 /*-- Only make FST from supplied fusions. Fusion caller not required. --*/
@@ -67,44 +191,41 @@ if(binding.variables.containsKey("caller")){
 
 if(binding.variables.containsKey("print")){
 
-	if(print){
+	// Fusion specific parameters
+	find_fusion = true
 
-		// Fusion specific parameters
-		find_fusion = true
-
-		if(binding.variables.containsKey("fusions")){
-			fusion = fusions.split(","); //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
-		} else {
-			print "Please insert a comma delimited list of fusions"
-			System.exit(0)
-		}
-
-		// PDF specific parameters
-
-		if(binding.variables.containsKey("pdf_width")){
-			pdf_width = pdf_width
-		} else {
-			pdf_width = "9"
-		}
-
-		if(binding.variables.containsKey("pdf_height")){
-			pdf_height = pdf_height
-		} else {
-			pdf_height = "16"
-		}
-
-		// Adjusts the relative track sizes in the final PDF
-		// Order: axis, coverage, genes, domains, transcripts, splice junctions
-
-		if(binding.variables.containsKey("sizing")){
-			proportion = sizing
-		} else {
-			proportion = "1,3,1,2,4,2"
-		}
-
+	if(binding.variables.containsKey("fusions")){
+		fusion = fusions.split(","); //if true above, identify a list of fusions of interest. Must be in order of fusion and seperated with a colon (:)
 	} else {
-		find_fusion = false
+		print "Please insert a comma delimited list of fusions"
+		System.exit(0)
 	}
+
+	// PDF specific parameters
+
+	if(binding.variables.containsKey("pdf_width")){
+		pdf_width = pdf_width
+	} else {
+		pdf_width = "16"
+	}
+
+	if(binding.variables.containsKey("pdf_height")){
+		pdf_height = pdf_height
+	} else {
+		pdf_height = "9"
+	}
+
+	// Adjusts the relative track sizes in the final PDF
+	// Order: axis, coverage, genes, domains, transcripts, splice junctions
+
+	if(binding.variables.containsKey("sizing")){
+		proportion = sizing
+	} else {
+		proportion = "1,3,1,2,4,2"
+	}
+
+} else {
+	find_fusion = false
 }
 
 if(binding.variables.containsKey("competitive")){
@@ -132,12 +253,78 @@ if(binding.variables.containsKey("align_mem")){
 }
 
 
-/*===========================================================
-	Setup pipeline parameters
-===========================================================*/
+/*-- Track Colours --*/
+def track_colours = []
 
-fst_program = System.getenv("CLINKERDIR") // location of this program, i.e. /path/to/program/, default is level up from this script
-resources = fst_program+"/resources/"
+if(!binding.variables.containsKey("col_coverage")){
+	track_colours[0] = '6e65ad'
+} else {
+	track_colours[0] = col_coverage
+}
+
+if(!binding.variables.containsKey("col_gene1")){
+	track_colours[1] = '3983AA'
+} else {
+	track_colours[1] = col_gene1
+}
+
+if(!binding.variables.containsKey("col_gene2")){
+	track_colours[2] = '2b749a'
+} else {
+	track_colours[2] = col_gene2
+}
+
+if(!binding.variables.containsKey("col_domains")){
+	track_colours[3] = 'f05f3b'
+} else {
+	track_colours[3] = col_domains
+}
+
+if(!binding.variables.containsKey("col_transcript")){
+	track_colours[4] = 'a1d16e'
+} else {
+	track_colours[4] = col_transcript
+}
+
+if(!binding.variables.containsKey("col_transcript_bg")){
+	track_colours[5] = 'f2ffe4'
+} else {
+	track_colours[5] = col_transcript_bg
+}
+
+if(!binding.variables.containsKey("col_transcript_border")){
+	track_colours[6] = '215A4A'
+} else {
+	track_colours[6] = col_transcript_border
+}
+
+if(!binding.variables.containsKey("col_junctions")){
+	track_colours[7] = 'D7D4E4'
+} else {
+	track_colours[7] = col_junctions
+}
+
+if(!binding.variables.containsKey("col_fusions")){
+	track_colours[8] = '6e65ad'
+} else {
+	track_colours[8] = col_fusions
+}
+
+if(!binding.variables.containsKey("col_highlights")){
+	track_colours[9] = 'ff6d6d'
+} else {
+	track_colours[9] = col_highlights
+}
+
+if(!binding.variables.containsKey("order")){
+	track_order = 'axis,coverage,gene,domain,transcript,sashimi'
+} else {
+	track_order = order
+}
+
+track_colours = track_colours.join(",")
+
+
 
 /*===========================================================
 	Setup pipeline paths
@@ -147,6 +334,8 @@ annotation_folder = fst_output_folder+"/annotation"
 alignment_folder = fst_output_folder+"/alignment"
 genome_folder = fst_output_folder+"/genome"
 reference_folder = fst_output_folder+"/reference"
+plots_folder = fst_output_folder + "/plots"
+
 
 /*=======================================================
 
@@ -154,30 +343,36 @@ reference_folder = fst_output_folder+"/reference"
 
 =======================================================*/
 
-/*--Generate fused annotation and fst reference fasta files--*/
 
 generate_fst = {
-	produce("$fst_output_folder/reference/fst_reference.fasta") {
+
+	// Generate Fusion SuperTranscriptome
+
+	produce("$reference_folder/fst_reference.fasta") {
 		if(fusion_finder){
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -fusionlist $fusion"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -fusionlist $fusion -header $header"
 		} else {
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -header $header"
 		}
 	}
+
 }
 
 star_genome_gen = {
-    //Generate STAR genome index
+
     doc "Generate STAR genome index"
 
+	// Setup stage
+	String fst_supertranscriptome = "$reference_folder/fst_reference.fasta"
+
+	// Generate Fusion SuperTranscriptome Genome for STAR
     produce("$genome_folder/Genome") {
-	    exec """
-	        STAR --runMode genomeGenerate
+	    exec """STAR --runMode genomeGenerate
 				--runThreadN $threads
 				--genomeDir $genome_folder
-				--genomeFastaFiles $reference_folder/fst_reference.fasta
+				--genomeFastaFiles $fst_supertranscriptome
 				--limitGenomeGenerateRAM $genome_mem
-				--genomeSAindexNbases 5"""
+				--genomeSAindexNbases 5""","stargen"
     }
 }
 
@@ -185,50 +380,54 @@ star_align = {
 
 	doc "Map paired-end reads using the STAR aligner: 1st pass"
 
-  //Map paired-end reads using the STAR aligner: 1st pass
+  	//Map paired-end reads using the STAR aligner: 1st pass
 	from("*.fastq.gz") {
-		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("Aligned.sortedByCoord.out.bam") {
+		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz"){
 
-			String R1 = inputs[0];
-			String R2 = inputs[1];
-			String files = R1+" "+R2;
+			// Setup stage
+			files = inputs.toString()
+			def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
+			output.dir = fst_alignment_path
+			String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
 
-			String file_name = R1.split("/")[-1]
-			String folder_name = file_name.split("_R1")[0]
-			new File("$alignment_folder/$folder_name").mkdirs()
-			output.dir = "$alignment_folder/$folder_name/"
-
-			exec """STAR --genomeDir $genome_folder
-				--readFilesIn ${files}
-				--readFilesCommand zcat
-				--outSAMtype BAM SortedByCoordinate
-				--runThreadN $threads
-				--outFileNamePrefix "$output.dir/"
-				--limitBAMsortRAM $align_mem
-				--outWigType bedGraph
-				--outWigNorm RPM
-				--outWigStrand Unstranded
-			""","star1pass"
+			// Align to fusion SuperTranscriptome
+			produce("$bam"){
+				exec """STAR --genomeDir $genome_folder
+					--readFilesIn ${files}
+					--readFilesCommand zcat
+					--outSAMtype BAM SortedByCoordinate
+					--runThreadN $threads
+					--outFileNamePrefix "$output.dir/"
+					--limitBAMsortRAM $align_mem
+					--outWigType bedGraph
+					--outWigNorm RPM
+					--genomeSAindexNbases 5
+					--outWigStrand Unstranded
+				""", "star1pass"
+			}
 
 	    }
 	}
+
 }
 
-/*--Prep --*/
 
 index_bams = {
 
 	from("*.fastq.gz") {
-		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("Aligned.sortedByCoord.out.bam.bai") {
+		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
 
-			String R1 = inputs[0];
-			String file_name = R1.split("/")[-1]
-			String folder_name = file_name.split("_R1")[0]
-			output.dir = "$alignment_folder/$folder_name"
+			// Setup stage
+			def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
+			output.dir = fst_alignment_path
+			String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
 
-			exec "echo 'Indexing Alignment ($output.dir/Aligned.sortedByCoord.out.bam)'"
-			exec "samtools index $output.dir/Aligned.sortedByCoord.out.bam"
-			exec "echo 'Index Complete'"
+			// Index aligned fusion SuperTranscriptome
+			produce("$output.dir/Aligned.sortedByCoord.out.bam.bai"){
+				exec "echo 'Indexing Alignment ($bam)'"
+				exec "samtools index $bam"
+				exec "echo 'Index Complete'"
+			}
 
 		}
   	}
@@ -238,20 +437,19 @@ index_bams = {
 
 prepare_plot = {
 
+	// Run for each specified fusion
+
 	for(fusion_name in fusion){
-
-		fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
-
 		from("*.fastq.gz") {
 			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
 
-				String R1 = inputs[0];
-				String file_name = R1.split("/")[-1]
-				String folder_name = file_name.split("_R1")[0]
-				output.dir = "$alignment_folder/$folder_name/$fusion_friendly"
-				String new_alignment = "$alignment_folder/$folder_name"
+				// Setup Stage 
+				fusion_friendly = fusion_name.replaceAll(":", "_") // allows for windows compatiability
+				def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
+				output.dir = "$fst_alignment_path/$fusion_friendly" // Creates new fusion folder in fusion alignment folder
 
-				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $new_alignment $reference_folder"
+				// Prepare plot
+				exec "$fst_program/plotit/fst_plot_prep.sh $fusion_name $output.dir $fusion_friendly $annotation_folder $fst_alignment_path $reference_folder"
 
 			}
 
@@ -264,28 +462,16 @@ prepare_plot = {
 plot_fusion = {
 
 	for(fusion_name in fusion){
-
-		fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
-
 		from("*.fastq.gz") {
 			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("${fusion_friendly}.pdf") {
 
-				String R1 = inputs[0];
-				String file_name = R1.split("/")[-1]
-				String folder_name = file_name.split("_R1")[0]
-				String friendly_folder = "$alignment_folder/$folder_name/$fusion_friendly"
-				String new_alignment = "$alignment_folder/$folder_name"
+				// Setup Stage
+				fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
+				def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
+				String plot_resources = "$fst_alignment_path/$fusion_friendly"
+				output.dir = plots_folder + "/" + sample_name
 
-				String plot_path = fst_output_folder + "/plots/" + folder_name
-				def plot_folder = new File(plot_path)
-
-				if( !plot_folder.exists() ) {
-					plot_folder.mkdirs()
-				}
-
-				output.dir = plot_path
-
-				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $friendly_folder $pdf_width $pdf_height $proportion $new_alignment $folder_name"
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $plot_resources $pdf_width $pdf_height $proportion $fst_alignment_path $sample_name $track_colours $track_order"
 
 			}
 		}

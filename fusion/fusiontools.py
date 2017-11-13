@@ -346,7 +346,7 @@ def createAnnotationFiles(fusions, st_genes, annotation_folder):
             exons = fusion.gene_name_1 + ":" + fusion.gene_name_2 + "\t" + str(exon_start) + "\t" + str(exon_end) + "\t" + "Exon"+str(exon_no) + "\t" + "0" + "\t" + "." + "\t" +  str(exon_start) + "\t" +  str(exon_end) + "\t" + RGB + "\n"
             exon_boundaries.write(exons)
 
-        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t0\t"+str(exon_end)+"\t"+fusion.gene_name_1+"\t0\t+\t0\t"+str(exon_end)+"\t255,0,0\n"
+        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t0\t"+str(exon_end + 1)+"\t"+fusion.gene_name_1+"\t0\t+\t0\t"+str(exon_end + 1)+"\t255,0,0\n"
         gene_boundaries.write(gene_line)
 
         gene_1_end = int(exon_end)

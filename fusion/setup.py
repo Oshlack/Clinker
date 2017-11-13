@@ -40,6 +40,8 @@ def programInput(user_input):
 				command = 7
 			elif "-fusionlist" == user_input[argument]:
 				command = 8
+			elif "-header" == user_input[argument]:
+				command = 9
 			else:
 				print "ERROR: " + user_input[argument] + " is not a valid argument. Please use the following options:\n"
 				print "-in (path/to/fusions OR custom, space delimited list)"
@@ -60,7 +62,7 @@ def programInput(user_input):
 				resources = user_input[argument]
 				st_location = resources+'/hg38_genCode24_st.fasta'
 				annotation_location = resources+'/hg38_genCode24_st-sorted-exons.gtf'
-				protein_location = resources+'/hg38_genCode24_pfam-map.bed'
+				protein_location = resources+'/hg38_genCode24_pfam-map_e6.bed'
 			elif command == 5:
 				delimiter = user_input[argument]
 			elif command == 6:
@@ -78,6 +80,27 @@ def programInput(user_input):
 					supplied_fusions = user_input[argument]
 				else:
 					supplied_fusions = False
+			elif command == 9:
+				header = user_input[argument]
+				if header == "true":
+					header = True
+				elif header == "false":
+					header = False
+				else:
+					print "ERROR: Please ensure that -header is set to either true or false"
+					sys.exit(1)
+
+
+	if "fusion_input" not in locals():
+		fusion_input = False
+
+	if "pos" not in locals():
+		pos = [1, 2, 3, 4]
+
+	if "header" not in locals() or "fusion_input" not in locals():
+		print "Assuming header in fusion caller output. Change with -header true/false"
+		header = True
+
 
 	# If resources does not exist, assume native structure
 	if "resources" not in locals():
@@ -104,7 +127,7 @@ def programInput(user_input):
 	if "supplied_fusions" not in locals():
 		supplied_fusions = False
 
-	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions
+	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header
 
 '''---------------------------------------------------------
 #
