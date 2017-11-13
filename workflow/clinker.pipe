@@ -394,7 +394,7 @@ star_align = {
 			produce("$bam"){
 				exec """STAR --genomeDir $genome_folder
 					--readFilesIn ${files}
-					--readFilesCommand zcat
+					--readFilesCommand gunzip -c
 					--outSAMtype BAM SortedByCoordinate
 					--runThreadN $threads
 					--outFileNamePrefix "$output.dir/"

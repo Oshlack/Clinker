@@ -54,4 +54,4 @@ rm $fusion_folder/fusion_reads.bam
 # Create SJ.Tab.out
 #------------------------------------------------------------------------------------------
 samtools view -h -o $fusion_folder/${fusion_friendly}.sam $fusion_folder/${fusion_friendly}_lt5.bam
-awk -f $current_directory/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort -V > $fusion_folder/junctions.txt
+awk -f $current_directory/sj_out_gen.awk $fusion_folder/${fusion_friendly}.sam | sort > $fusion_folder/junctions.txt

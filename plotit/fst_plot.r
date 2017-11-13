@@ -582,8 +582,6 @@ pdfIt <- function(width, height, fusion, fusion_friendly, results_location, anno
 
 	ratio <- as.integer(strsplit(user_input$ratio, ",")[[1]])
 
-	print(ratio)
-
 	# Add content
 	plot_it <- 'plotTracks(tracks, add=TRUE, sizes = ratio,
 				from=0, to=track_dimensions$upper,
