@@ -243,13 +243,13 @@ if(binding.variables.containsKey("threads")){
 if(binding.variables.containsKey("genome_mem")){
 	genome_mem = genome_mem
 } else {
-	genome_mem = "36000000000"
+	genome_mem = "4000000000"
 }
 
 if(binding.variables.containsKey("align_mem")){
 	align_mem = align_mem
 } else {
-	align_mem = "20000000000"
+	align_mem = "4000000000"
 }
 
 
