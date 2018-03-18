@@ -18,6 +18,8 @@
 suppressMessages(library(Gviz))
 suppressMessages(library(IRanges))
 suppressMessages(library(data.table))
+suppressMessages(library("biomaRt"))
+
 options(ucscChromosomeNames=FALSE)
 
 #===========================================================
@@ -132,8 +134,46 @@ trackDimensions <- function(gene_file, fusion){
 
 prepAnnotation <- function(file){
 
+	ensembl <- useMart("ensembl")
+	ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
+
 	raw_names <- as.character(unlist(file[,4]))
 	names <- gsub("Exon", "", raw_names)
+
+	# Get original gene names
+
+	genes <- as.data.frame(names)
+	gene_1_name <- genes$names[1]
+	gene_2_name <- genes$names[2]
+
+	gene_1_details <- getBM(attributes=c('chromosome_name', 'start_position', 'end_position', 'strand'),
+	      filters=c('hgnc_symbol'),
+	      values=list(gene_1_name),
+	      mart=ensembl)
+
+	gene_2_details <- getBM(attributes=c('chromosome_name', 'start_position', 'end_position', 'strand'),
+	      filters=c('hgnc_symbol'),
+	      values=list(gene_2_name),
+	      mart=ensembl)
+
+	gene_1_display <- paste(gene_1_name, " (", gene_1_details$chromosome_name, ":", gene_1_details$start_position, "-", gene_1_details$end_position,")", sep="")
+	gene_2_display <- paste(gene_2_name, " (", gene_2_details$chromosome_name, ":", gene_2_details$start_position, "-", gene_2_details$end_position,")", sep="")
+
+	names <- c(gene_1_display, gene_2_display)
+
+	count <- nrow(file)
+	individuals <- rep(1, count)
+
+	multiple_return <- list(group = rep(names, individuals), count = count)
+	return(multiple_return)
+}
+
+
+prepAnnotationProteins <- function(file){
+
+	raw_names <- as.character(unlist(file[,4]))
+	names <- gsub("Exon", "", raw_names)
+
 	count <- nrow(file)
 	individuals <- rep(1, count)
 
@@ -400,7 +440,7 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	gene_group <- prepAnnotation(annotations$genes)
 
 	protein_group <- prepAnnotationDomain(annotations$proteins)
-	protein_id <- prepAnnotation(annotations$proteins)
+	protein_id <- prepAnnotationProteins(annotations$proteins)
 
 	transcript_group <- prepAnnotationTranscripts(annotations$transcripts)
 	highlight_start <- unname(unlist(annotations$junctions["start"]))
