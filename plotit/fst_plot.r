@@ -132,7 +132,7 @@ trackDimensions <- function(gene_file, fusion){
 #
 #---------------------------------------------------
 
-prepAnnotation <- function(file){
+prepOrigCoords <- function(file){
 
 	ensembl <- useMart("ensembl")
 	ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
@@ -156,10 +156,25 @@ prepAnnotation <- function(file){
 	      values=list(gene_2_name),
 	      mart=ensembl)
 
-	gene_1_display <- paste(gene_1_name, " (", gene_1_details$chromosome_name, ":", gene_1_details$start_position, "-", gene_1_details$end_position,")", sep="")
-	gene_2_display <- paste(gene_2_name, " (", gene_2_details$chromosome_name, ":", gene_2_details$start_position, "-", gene_2_details$end_position,")", sep="")
+	gene_1_display <- paste(gene_1_details$chromosome_name, ":", gene_1_details$start_position, "-", gene_1_details$end_position, sep="")
+	gene_2_display <- paste(gene_2_details$chromosome_name, ":", gene_2_details$start_position, "-", gene_2_details$end_position, sep="")
 
 	names <- c(gene_1_display, gene_2_display)
+
+	count <- nrow(file)
+	individuals <- rep(1, count)
+
+	multiple_return <- list(group = rep(names, individuals), count = count)
+	return(multiple_return)
+}
+
+prepAnnotation <- function(file){
+
+	ensembl <- useMart("ensembl")
+	ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
+
+	raw_names <- as.character(unlist(file[,4]))
+	names <- gsub("Exon", "", raw_names)
 
 	count <- nrow(file)
 	individuals <- rep(1, count)
@@ -247,6 +262,28 @@ geneBoundaries <- function(annotations){
 	gene_allocation[gene_allocation == "1"] <- "gene_two"
 
 	return(gene_allocation)
+}
+
+#---------------------------------------------------
+#
+#   Allocate transcripts based on 1 / 0 from annotation
+#
+#   Input: Data Frame
+#   Output: Return group for track annotation
+#
+#---------------------------------------------------
+
+
+transcriptBoundaries <- function(annotations){
+
+	gene_boundary <- annotations$genes$end[1]
+	transcripts <- annotations$transcripts
+	transcripts$gene_no <- "gt_two"
+
+	transcripts[transcripts$end <= (gene_boundary + 1), "gene_no"] <- "gt_one"
+
+	return(transcripts$gene_no)
+
 }
 
 #---------------------------------------------------
@@ -435,9 +472,11 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 		is_fusion <- FALSE
 	}
 
+
 	# Prepare Annotation Tracks
 
 	gene_group <- prepAnnotation(annotations$genes)
+	gene_orig_coords <- prepOrigCoords(annotations$genes)
 
 	protein_group <- prepAnnotationDomain(annotations$proteins)
 	protein_id <- prepAnnotationProteins(annotations$proteins)
@@ -447,6 +486,24 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	highlight_end <- unname(unlist(annotations$junctions["end"]))
 
 	# Track Colours - coverage, gene 1, gene 2, domains, transcripts, transcript_bg, transcript_border, junctions, fusions
+
+	# Gene Annotation Track
+	orig_coords_track <- AnnotationTrack(
+		annotations$genes, 
+		fontsize = 10, 
+		fontsize.title = 12,
+		showFeatureId = TRUE, 
+		showId = FALSE, 
+		chromosome = fusion, 
+		groupAnnotation = "id", 
+		col = "#ffffff", 
+		background.title = "#FFFFFF", 
+		id = gene_orig_coords$group,
+		fill = "#FFFFFF",
+		fontcolor.item='#333333',
+		name="", 
+		stacking="hide"
+	)
 
 	# Gene Axis Track
 	axis <- GenomeAxisTrack(fontsize = 12, chromosome = fusion, add53 = TRUE, add35 = TRUE)
@@ -558,15 +615,18 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 		fontsize = 10, 
 		fontsize.title=12, 
 		background.panel = track_colours[6], 
-		showExonId=TRUE, 
 		showId=TRUE, 
+		showExonId=TRUE, 
 		fill = track_colours[5], 
 		col = track_colours[7], 
-		just.group = "below", 
+		just.group = "below",
 		background.title = track_colours[5], 
 		title.width = 0.5, 
 		name="Transcripts"
 	)
+
+	feature(transcript_track) <- c(transcriptBoundaries(annotations)) # Add names to gene track
+
 
 	# Create lines over fusion breakpoints
 
@@ -583,7 +643,7 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	# Create PDF
 	pdf_width <- as.integer(user_input$pdf_width)
 	pdf_height <- as.integer(user_input$pdf_height)
-	tracks <- list(axis, highlights, sashimi_plot)
+	tracks <- list(orig_coords_track, axis, highlights, sashimi_plot)
 
 	pdfIt(pdf_width, pdf_height, fusion, fusion_friendly, results_location, annotations, tracks, user_input)
 
@@ -620,13 +680,13 @@ pdfIt <- function(width, height, fusion, fusion_friendly, results_location, anno
 	# Create the PDF
 	pdf(pdf_location, width=width, height=height)
 
-	ratio <- as.integer(strsplit(user_input$ratio, ",")[[1]])
+	ratio <- as.integer(strsplit(paste("1,",user_input$ratio, sep=""), ",")[[1]]) # Paste for the original coords, testing new feature.
 
 	# Add content
 	plot_it <- 'plotTracks(tracks, add=TRUE, sizes = ratio,
-				from=0, to=track_dimensions$upper,
+				from=0, to=track_dimensions$upper, transcriptAnnotation = "transcript",
 				chromosome=fusion, shape = "box", min.height = 5,
-				gene_one=track_colours[2], gene_two=track_colours[3])'
+				gene_one=track_colours[2], gene_two=track_colours[3], gt_one=track_colours[5], gt_two="#679834")'
 
 	the_plot <- eval(parse(text = plot_it))
 
