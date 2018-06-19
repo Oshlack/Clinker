@@ -224,6 +224,14 @@ if(binding.variables.containsKey("print")){
 		proportion = "1,3,1,2,4,2"
 	}
 
+// Minimum read support for junctions
+
+if(!binding.variables.containsKey("support")){
+	min_support = 2
+} else {
+	min_support = support
+}
+
 } else {
 	find_fusion = false
 }
@@ -252,8 +260,8 @@ if(binding.variables.containsKey("align_mem")){
 	align_mem = "4000000000"
 }
 
+// Track Colours
 
-/*-- Track Colours --*/
 def track_colours = []
 
 if(!binding.variables.containsKey("col_coverage")){
@@ -323,6 +331,8 @@ if(!binding.variables.containsKey("order")){
 }
 
 track_colours = track_colours.join(",")
+
+
 
 
 
@@ -471,7 +481,7 @@ plot_fusion = {
 				String plot_resources = "$fst_alignment_path/$fusion_friendly"
 				output.dir = plots_folder + "/" + sample_name
 
-				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $plot_resources $pdf_width $pdf_height $proportion $fst_alignment_path $sample_name $track_colours $track_order"
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $plot_resources $pdf_width $pdf_height $proportion $fst_alignment_path $sample_name $track_colours $track_order $min_support"
 
 			}
 		}

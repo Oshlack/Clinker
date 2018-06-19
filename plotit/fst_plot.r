@@ -81,6 +81,7 @@ userInput <- function(){
 	sample_name <- command_line[8]
 	track_colours <- command_line[9]
 	track_order <- command_line[10]
+	min_support <- command_line[11]
 
 	#results_location <- "Path to results folder"
 	#fusion <- as.character("Your fusion name")
@@ -96,7 +97,8 @@ userInput <- function(){
 		alignment_folder = alignment_folder, 
 		sample_name = sample_name, 
 		track_colours = track_colours,
-		track_order = track_order
+		track_order = track_order,
+		min_support = as.integer(min_support)
 	)
 
 	return(multiple_return)
@@ -380,7 +382,6 @@ prepare <- function(){
 
 	if(is_fusion){
 
-
 		junctions_read <- try(read.table(locations$junctions))
 		if(class(junctions_read)=='try-error') {
 			print("There are no fusion junctions found in this gene pair.")
@@ -390,26 +391,28 @@ prepare <- function(){
 
 		junctions_file <- as.data.frame(junctions_read)
 		fusion_junctions <- junctions_file[junctions_file[,2] <= gene_boundaries$end[1] & junctions_file[,3] > gene_boundaries$end[1], , drop=FALSE]
-
-		unique <- fusion_junctions[4]
-		multi <- fusion_junctions[5]
-		fusion_junctions$support <- unique + multi
-		fusion_junction <- fusion_junctions[fusion_junctions$support > 3, , drop=FALSE]
-
-		if(nrow(fusion_junction) < 1){
-			stop("Not enough read support for the fusion (< 3 reads supporting), printing terminating.") 
-		}
-
-		fusion_frame_name <- c(fusion, fusion)
-		fusion_frame_start <- c(fusion_junction[,2], fusion_junction[,3])
-		fusion_frame_end <- c(fusion_junction[,2], fusion_junction[,3])
-		fusion_frame <- data.frame("chromosomes" = fusion_frame_name, "start" = fusion_frame_start, "end" = fusion_frame_end)
+		colnames(fusion_junctions) = c("fusion","st_bp1","st_bp2","unique","multi")
 
 		if(nrow(fusion_junctions) == 0){
 			print("There are no fusion junctions found in this gene pair.")
 			print("Terminating plotting for this fusion.")
 			return()
 		}
+
+		fusion_junctions$support <- rowSums(fusion_junctions[, c("unique", "multi")], na.rm=T)
+		fusion_junction <- fusion_junctions[fusion_junctions$support >= user_input$min_support, , drop=FALSE]
+
+		if(nrow(fusion_junction) == 0){
+			print(paste("There are no fusion junctions with a read support greater than ", user_input$min_support - 1, sep=""))
+			print("Terminating plotting for this fusion.")
+			return()
+		}
+
+
+		fusion_frame_name <- c(fusion, fusion)
+		fusion_frame_start <- c(fusion_junction[,2], fusion_junction[,3])
+		fusion_frame_end <- c(fusion_junction[,2], fusion_junction[,3])
+		fusion_frame <- data.frame("chromosomes" = fusion_frame_name, "start" = fusion_frame_start, "end" = fusion_frame_end)
 
 	} else {
 		fusion_frame <- NULL
@@ -427,7 +430,6 @@ prepare <- function(){
 		protein_map_filtered <- protein_map_file[protein_map_file$V1 == protein_fusion[1,1] & protein_map_file$V3 <= gene_boundaries$end & protein_map_file$V2 >= gene_boundaries$start, , drop=FALSE]
 		protein_map_filtered$V1 <- fusion
 	}
-
 
 	colnames(protein_map_filtered) <- c("chromosomes", "start", "end", "domain")
 
@@ -508,6 +510,7 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	# Gene Axis Track
 	axis <- GenomeAxisTrack(fontsize = 12, chromosome = fusion, add53 = TRUE, add35 = TRUE)
 
+
 	# Normalised coverage track
 	coverage <- DataTrack(  
 		locations$coverage, 
@@ -542,7 +545,7 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	# Splice junction track
 	splice_junction_track  <- AlignmentsTrack(  
 		locations$splice_junctions, 
-		sashimiScore = 5, 
+		sashimiScore = user_input$min_support, 
 		sashimiNumbers = TRUE, 
 		fontsize = 10, 
 		fontsize.title = 12,
@@ -557,13 +560,12 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 		col.axis = track_colours[8]
 	)
 
-
 	# Fusion Breakpoint track
 	fusion_breakpoint_track  <- AlignmentsTrack(
 		locations$fusion_breakpoints, 
 		fontsize = 10,
 		fontsize.title = 12, 
-		sashimiScore = 5, 
+		sashimiScore = user_input$min_support, 
 		sashimiNumbers = TRUE, 
 		chromosome = fusion, 
 		background.title = track_colours[9], 
