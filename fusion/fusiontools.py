@@ -503,11 +503,17 @@ def createFusionFasta(fusions, reference_folder, st_genes, competitive):
 
     # Add competitive
 
+    first_competitor = True
+
     if competitive:
         for key in st_genes:
 
             try:
                 st_seq = st_genes[key][0]
+
+                if first_competitor:
+                    fusion_st_fasta.write("\n")
+                    first_competitor = False
 
                 fusion_st_fasta.write(">" + key + "\n")
                 fusion_st_fasta.write(str(st_seq) + "\n")
