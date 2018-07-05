@@ -10,6 +10,7 @@ Please refer to the [wiki](https://github.com/Oshlack/Clinker/wiki) for further 
 -----
 
 Well I guess we got published, Woot! You can read about the project here:
+
 https://academic.oup.com/gigascience/advance-article/doi/10.1093/gigascience/giy079/5049009
 
 If you have any problems, let us know.
