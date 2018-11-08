@@ -18,8 +18,6 @@
 suppressMessages(library(Gviz))
 suppressMessages(library(IRanges))
 suppressMessages(library(data.table))
-suppressMessages(library("biomaRt"))
-
 options(ucscChromosomeNames=FALSE)
 
 #===========================================================
@@ -27,7 +25,6 @@ options(ucscChromosomeNames=FALSE)
 #   F U N C T I O N S
 #
 #===========================================================
-
 
 #---------------------------------------------------
 #
@@ -134,51 +131,42 @@ trackDimensions <- function(gene_file, fusion){
 #
 #---------------------------------------------------
 
-prepOrigCoords <- function(file){
+prepOrigCoords <- function(gene_boundary){
 
-	ensembl <- useMart("ensembl")
-	ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
-
-	raw_names <- as.character(unlist(file[,4]))
-	names <- gsub("Exon", "", raw_names)
+	genes <- as.data.frame(gene_boundary)
 
 	# Get original gene names
 
-	genes <- as.data.frame(names)
-	gene_1_name <- genes$names[1]
-	gene_2_name <- genes$names[2]
+	chromosome_1 <- genes$chr[1]
+	chromosome_2 <- genes$chr[2]
+	start_1 <- genes$genomic_start[1]
+	start_2 <- genes$genomic_start[2]
+	end_1 <- genes$genomic_end[1]
+	end_2 <- genes$genomic_end[2]
 
-	gene_1_details <- getBM(attributes=c('chromosome_name', 'start_position', 'end_position', 'strand'),
-	      filters=c('hgnc_symbol'),
-	      values=list(gene_1_name),
-	      mart=ensembl)
-
-	gene_2_details <- getBM(attributes=c('chromosome_name', 'start_position', 'end_position', 'strand'),
-	      filters=c('hgnc_symbol'),
-	      values=list(gene_2_name),
-	      mart=ensembl)
-
-	gene_1_display <- paste(gene_1_details$chromosome_name, ":", gene_1_details$start_position, "-", gene_1_details$end_position, sep="")
-	gene_2_display <- paste(gene_2_details$chromosome_name, ":", gene_2_details$start_position, "-", gene_2_details$end_position, sep="")
+	gene_1_display <- paste(chromosome_1, ":", start_1, "-", end_1, sep="")
+	gene_2_display <- paste(chromosome_2, ":", start_2, "-", end_2, sep="")
 
 	names <- c(gene_1_display, gene_2_display)
 
-	count <- nrow(file)
+	count <- nrow(gene_boundary)
 	individuals <- rep(1, count)
 
 	multiple_return <- list(group = rep(names, individuals), count = count)
 	return(multiple_return)
 }
 
-prepAnnotation <- function(file){
+prepAnnotation <- function(gene_boundary){
 
-	ensembl <- useMart("ensembl")
-	ensembl <- useDataset("hsapiens_gene_ensembl",mart=ensembl)
+	genes <- as.data.frame(gene_boundary)
 
-	raw_names <- as.character(unlist(file[,4]))
-	names <- gsub("Exon", "", raw_names)
+	fusion_pairs <- strsplit(as.character(genes$fusion), split = ":")
+	gene_names <- data.frame(gene_pair = rep(genes$fusion, sapply(fusion_pairs, length)), gene = unlist(fusion_pairs))
+	names <- gene_names$gene
 
-	count <- nrow(file)
+	names <- names[duplicated(names)]
+
+	count <- nrow(gene_boundary)
 	individuals <- rep(1, count)
 
 	multiple_return <- list(group = rep(names, individuals), count = count)
@@ -209,16 +197,6 @@ prepAnnotationDomain <- function(file){
 	return(multiple_return)
 }
 
-prepAnnotationTranscripts <- function(file){
-
-	count <- nrow(file)
-	names <- sprintf("%d", 1:count)
-
-	individuals <- rep(1, count)
-
-	multiple_return <- list(group = rep(names, individuals), count = count)
-	return(multiple_return)
-}
 
 #---------------------------------------------------
 #
@@ -281,7 +259,6 @@ transcriptBoundaries <- function(annotations){
 	gene_boundary <- annotations$genes$end[1]
 	transcripts <- annotations$transcripts
 	transcripts$gene_no <- "gt_two"
-
 	transcripts[transcripts$end <= (gene_boundary + 1), "gene_no"] <- "gt_one"
 
 	return(transcripts$gene_no)
@@ -360,23 +337,23 @@ prepare <- function(){
 		gene_boundaries$V1 <- fusion
 	}
 
-	colnames(gene_boundaries) <- c("chromosomes", "start", "end", "name", "gene_no", "strand", "start2", "end2", "rgb")
+	colnames(gene_boundaries) <- c("fusion", "start", "end", "chr", "gene_no", "strand", "genomic_start", "genomic_end", "rgb")
 
 	# Load in the transcripts
 	transcript_file <- as.data.frame(read.table(locations$transcripts))
 
 	if(is_fusion){
 		transcripts_filtered <- transcript_file[transcript_file[,1] == fusion, , drop=FALSE]
-		transcript_boundaries <- transcripts_filtered[,c(1,4,5,7,13,16)]
+		transcript_boundaries <- transcripts_filtered[,c(1,4,5,7,13,16,19)]
 	} else {
 		transcripts_filtered <- transcript_file[grepl(fusion, transcript_file$V1), ]
 		transcripts_fusion <- transcripts_filtered[1,1, drop=FALSE]
 		transcripts_filtered <- transcripts_filtered[transcripts_filtered$V1 == transcripts_fusion[1,1] & transcripts_filtered$V5 <= gene_boundaries$end & transcripts_filtered$V4 >= gene_boundaries$start, , drop=FALSE]
-		transcript_boundaries <- transcripts_filtered[,c(1,4,5,7,13,16)]
+		transcript_boundaries <- transcripts_filtered[,c(1,4,5,7,13,16,19)]
 		transcript_boundaries$V1 <- fusion
 	}
 
-	colnames(transcript_boundaries) <- c("chromosomes", "start", "end", "strand", "transcript","exon")
+	colnames(transcript_boundaries) <- c("chromosomes", "start", "end", "strand", "transcript","tsl","exon")
 
 	# Load in the splice junctions, differentiate between splice junctions and fusion breakpoints
 
@@ -483,7 +460,6 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	protein_group <- prepAnnotationDomain(annotations$proteins)
 	protein_id <- prepAnnotationProteins(annotations$proteins)
 
-	transcript_group <- prepAnnotationTranscripts(annotations$transcripts)
 	highlight_start <- unname(unlist(annotations$junctions["start"]))
 	highlight_end <- unname(unlist(annotations$junctions["end"]))
 
@@ -628,7 +604,6 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	)
 
 	feature(transcript_track) <- c(transcriptBoundaries(annotations)) # Add names to gene track
-
 
 	# Create lines over fusion breakpoints
 

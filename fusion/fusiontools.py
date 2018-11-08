@@ -27,12 +27,14 @@ class Fusions:
 
 class Fusion:
 
-    def __init__(self, gene_name_1, gene_name_2, gene_sequence_1, gene_sequence_2):
+    def __init__(self, gene_name_1, gene_name_2, chr_1, chr_2, gene_sequence_1, gene_sequence_2):
         self.gene_name_1 = gene_name_1
         self.gene_name_2 = gene_name_2
+        self.chromosome_1 = chr_1
+        self.chromosome_2 = chr_2
         self.gene_sequence_1 = gene_sequence_1
         self.gene_sequence_2 = gene_sequence_2
-        self.fused_sequence = gene_sequence_1+gene_sequence_2
+        self.fused_sequence = gene_sequence_1 + gene_sequence_2
 
 class Chromosomes:
 
@@ -222,10 +224,10 @@ def getSequence(st_genes, gene):
 #
 ---------------------------------------------------------'''
 
-def mapSupertranscript(gene_1, gene_2, duplicates, found, not_found, total, st_genes):
+def mapSupertranscript(gene_1, gene_2, chr_1, chr_2, duplicates, found, not_found, total, st_genes):
 
     if gene_1 == "Not Found" or gene_2 == "Not Found":
-        not_found +=1
+        not_found += 1
         return False, duplicates, found, not_found
     else:
         found += 1
@@ -243,7 +245,7 @@ def mapSupertranscript(gene_1, gene_2, duplicates, found, not_found, total, st_g
 
         # We have the gene names and sequences, create a fusion and add it to the list of fusions
         if sequence_1 != False and sequence_2 != False:
-            fusion = Fusion(gene_1, gene_2, sequence_1, sequence_2)
+            fusion = Fusion(gene_1, gene_2, chr_1, chr_2, sequence_1, sequence_2)
             return fusion, duplicates, found, not_found
         else:
             return False, duplicates, found, not_found
@@ -310,6 +312,7 @@ def breakpointLocation(pos, columns):
 
     return chr_1, bp_1, chr_2, bp_2
 
+
 '''---------------------------------------------------------
 #
 #   Create exon_boundaries.bed, gene_boundaries.bed
@@ -318,16 +321,47 @@ def breakpointLocation(pos, columns):
 #
 ---------------------------------------------------------'''
 
-def createAnnotationFiles(fusions, st_genes, annotation_folder):
+def createAnnotationFiles(fusions, st_genes, genomic_coordinates, annotation_folder):
 
     exon_boundaries = open(annotation_folder+'/exon_boundaries.bed','w')
     gene_boundaries =  open(annotation_folder+'/gene_boundaries.bed','w')
 
+    # Lets index that hg19 or hg38 gene descriptor
+    gene_locations = open(genomic_coordinates, "r")
+    chromosomes = geneList(gene_locations)
+
     for fusion in fusions.list:
 
         gene_1_exons = st_genes[fusion.gene_name_1][1].split(",")
-
         exon_no = 0
+
+        # Genomic Location
+
+        chr_genes_1 = chromosomes.index[fusion.chromosome_1]
+        min_start_1 = 9000000000
+        max_end_1 = 0
+        chr_genes_2 = chromosomes.index[fusion.chromosome_2]
+        min_start_2 = 9000000000
+        max_end_2 = 0
+
+
+        for gene in chr_genes_1:
+
+            # At the end of this, we should have the biggest ranges
+
+            if fusion.gene_name_1 == gene.name:
+                if gene.start < min_start_1:
+                    min_start_1 = gene.start
+                if gene.end > max_end_1:
+                    max_end_1 = gene.end
+
+        for gene in chr_genes_2:
+            if fusion.gene_name_2 == gene.name:
+                if gene.start < min_start_2:
+                    min_start_2 = gene.start
+                if gene.end > max_end_2:
+                    max_end_2 = gene.end
+
 
         for exons in gene_1_exons:
 
@@ -346,7 +380,7 @@ def createAnnotationFiles(fusions, st_genes, annotation_folder):
             exons = fusion.gene_name_1 + ":" + fusion.gene_name_2 + "\t" + str(exon_start) + "\t" + str(exon_end) + "\t" + "Exon"+str(exon_no) + "\t" + "0" + "\t" + "." + "\t" +  str(exon_start) + "\t" +  str(exon_end) + "\t" + RGB + "\n"
             exon_boundaries.write(exons)
 
-        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t0\t"+str(exon_end + 1)+"\t"+fusion.gene_name_1+"\t0\t+\t0\t"+str(exon_end + 1)+"\t255,0,0\n"
+        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t0\t"+str(exon_end + 1)+"\t"+fusion.chromosome_1+"\t0\t+\t"+str(min_start_1)+"\t"+str(max_end_1)+"\t255,0,0\n"
         gene_boundaries.write(gene_line)
 
         gene_1_end = int(exon_end)
@@ -373,12 +407,13 @@ def createAnnotationFiles(fusions, st_genes, annotation_folder):
             exon_boundaries.write(exons)
 
 
-        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t"+fusion.gene_name_2+"\t1\t+\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t0,186,255\n"
+        gene_line = fusion.gene_name_1 + ":" + fusion.gene_name_2+"\t"+str(gene_2_start)+"\t"+str(exon_end)+"\t"+fusion.chromosome_2+"\t1\t+\t"+str(min_start_2)+"\t"+str(max_end_2)+"\t0,186,255\n"
         gene_boundaries.write(gene_line)
 
 
     exon_boundaries.close()
     gene_boundaries.close()
+    gene_locations.close()
 
 
 '''---------------------------------------------------------
@@ -441,13 +476,18 @@ def createFusionList(fusion_results, pos, gene_list_location, st_genes, header, 
             gene_2 = mapGene(chromosomes, chr_2, bp_2, total)
 
         else:
+
+            # Need a more robust contigency. 
+
             gene_entry = line.split(":")
 
             gene_1 = gene_entry[0]
             gene_2 = gene_entry[1]
 
+
+
         # Map gene to superTranscriptome
-        fusion, duplicates, found, not_found = mapSupertranscript(gene_1, gene_2, duplicates, found, not_found, total, st_genes)
+        fusion, duplicates, found, not_found = mapSupertranscript(gene_1, gene_2, chr_1, chr_2, duplicates, found, not_found, total, st_genes)
 
         # Add found fusion superTranscript
         total += 1

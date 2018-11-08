@@ -60,7 +60,7 @@ class Domain:
 #
 ---------------------------------------------------------'''
 
-def createAnnotationFile(fusions, st_bed_file, st_pbed_file, annotation_folder):
+def createAnnotationFile(fusions, st_bed_file, st_pbed_file, annotation_folder, tsl):
 
     # Loop through superTranscriptome, create a dictionary of gene names
     annotations = {}
@@ -69,6 +69,13 @@ def createAnnotationFile(fusions, st_bed_file, st_pbed_file, annotation_folder):
         annotation = line.strip("\n").split("\t")
         gene_name = annotation[0]
 
+        if tsl:
+            try:
+                tsl_current = annotation[8].split(";")[2].strip().split(" ")[1].replace('"','')
+                if tsl_current == "NA" or int(tsl_current) > int(tsl):
+                    continue
+            except IndexError:
+                continue
         try:
             annotations[gene_name].append(Annotation(annotation))
         except KeyError:

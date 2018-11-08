@@ -42,6 +42,8 @@ def programInput(user_input):
 				command = 8
 			elif "-header" == user_input[argument]:
 				command = 9
+			elif "-tsl" == user_input[argument]:
+				command = 10
 			else:
 				print "ERROR: " + user_input[argument] + " is not a valid argument. Please use the following options:\n"
 				print "-in (path/to/fusions OR custom, space delimited list)"
@@ -89,10 +91,19 @@ def programInput(user_input):
 				else:
 					print "ERROR: Please ensure that -header is set to either true or false"
 					sys.exit(1)
+			elif command == 10:
+
+				# Note: this is a test resource
+				tsl = user_input[argument]
+				if tsl == "false":
+					tsl = False
 
 
 	if "fusion_input" not in locals():
 		fusion_input = False
+
+	if "tsl" not in locals():
+		tsl = False
 
 	if "pos" not in locals():
 		pos = [1, 2, 3, 4]
@@ -120,6 +131,7 @@ def programInput(user_input):
 			sys.exit(1)
 
 		gene_list_location = resources+'/'+genome_build_location
+		genomic_coordinates = resources+'/hg38_genCode24.txt'
 
 	if "delimiter" not in locals():
 		delimiter = "c"
@@ -127,7 +139,7 @@ def programInput(user_input):
 	if "supplied_fusions" not in locals():
 		supplied_fusions = False
 
-	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header
+	return fusion_input, destination, pos, gene_list_location, genomic_coordinates, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header, tsl
 
 '''---------------------------------------------------------
 #
