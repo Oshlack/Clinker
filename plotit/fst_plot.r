@@ -79,6 +79,7 @@ userInput <- function(){
 	track_colours <- command_line[9]
 	track_order <- command_line[10]
 	min_support <- command_line[11]
+	max_tsl <- command_line[12]
 
 	#results_location <- "Path to results folder"
 	#fusion <- as.character("Your fusion name")
@@ -95,7 +96,8 @@ userInput <- function(){
 		sample_name = sample_name, 
 		track_colours = track_colours,
 		track_order = track_order,
-		min_support = as.integer(min_support)
+		min_support = as.integer(min_support),
+		max_tsl = as.integer(max_tsl)
 	)
 
 	return(multiple_return)
@@ -282,6 +284,7 @@ prepare <- function(){
 	fusion <- user_input$fusion
 	fusion_location <- user_input$fusion_location
 	alignment_folder <- user_input$alignment_folder
+	max_tsl <- user_input$max_tsl
 
 	# Tell the user we're plotting now
 	print(paste("Plotting:", fusion, sep=" "))
@@ -354,6 +357,7 @@ prepare <- function(){
 	}
 
 	colnames(transcript_boundaries) <- c("chromosomes", "start", "end", "strand", "transcript","tsl","exon")
+	transcript_boundaries <- transcript_boundaries[transcript_boundaries$tsl <= max_tsl, , drop=FALSE]
 
 	# Load in the splice junctions, differentiate between splice junctions and fusion breakpoints
 
@@ -384,7 +388,6 @@ prepare <- function(){
 			print("Terminating plotting for this fusion.")
 			return()
 		}
-
 
 		fusion_frame_name <- c(fusion, fusion)
 		fusion_frame_start <- c(fusion_junction[,2], fusion_junction[,3])
@@ -450,7 +453,6 @@ create <- function(locations, annotations, results_location, fusion, fusion_frie
 	} else {
 		is_fusion <- FALSE
 	}
-
 
 	# Prepare Annotation Tracks
 

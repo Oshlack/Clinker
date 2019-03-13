@@ -14,7 +14,7 @@
 
 
 	Author: Breon Schmidt
-	Version: 1.3
+	Version: 1.4
 
 ================================================================================*/
 
@@ -335,7 +335,7 @@ track_colours = track_colours.join(",")
 // Exon annotation transcript support level
 
 if(!binding.variables.containsKey("tsl_min")){
-	tsl = false
+	tsl = 99
 } else {
 	tsl = tsl_min
 }
@@ -364,11 +364,13 @@ generate_fst = {
 
 	// Generate Fusion SuperTranscriptome
 
+	// TSL is high for now for development purposes
+
 	produce("$reference_folder/fst_reference.fasta") {
 		if(fusion_finder){
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -fusionlist $fusion -header $header -tsl $tsl"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -fusionlist $fusion -header $header -tsl 99"
 		} else {
-			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -header $header -tsl $tsl"
+			exec "python $fst_program/fusion/main.py -in $fusion_finder_output -out $fst_output_folder -pos $column_positions -del $delimiter -st $resources -genome $genome -competitive $competitive -header $header -tsl 99"
 		}
 	}
 
@@ -487,7 +489,7 @@ plot_fusion = {
 				String plot_resources = "$fst_alignment_path/$fusion_friendly"
 				output.dir = plots_folder + "/" + sample_name
 
-				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $plot_resources $pdf_width $pdf_height $proportion $fst_alignment_path $sample_name $track_colours $track_order $min_support"
+				exec "Rscript $fst_program/plotit/fst_plot.r $fst_output_folder $fusion_name $plot_resources $pdf_width $pdf_height $proportion $fst_alignment_path $sample_name $track_colours $track_order $min_support $tsl"
 
 			}
 		}
