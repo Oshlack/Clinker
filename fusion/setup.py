@@ -120,6 +120,7 @@ def programInput(user_input):
 			sys.exit(1)
 
 		gene_list_location = resources+'/'+genome_build_location
+		genomic_coordinates = resources+'/hg38_genCode24.txt'
 
 	if "delimiter" not in locals():
 		delimiter = "c"
@@ -127,7 +128,7 @@ def programInput(user_input):
 	if "supplied_fusions" not in locals():
 		supplied_fusions = False
 
-	return fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header
+	return fusion_input, destination, pos, gene_list_location, genomic_coordinates, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header
 
 '''---------------------------------------------------------
 #

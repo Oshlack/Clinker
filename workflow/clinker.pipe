@@ -14,7 +14,8 @@
 
 
 	Author: Breon Schmidt
-	Version: 1.3
+	Version: 1.3A
+	Date: 23-OCT-2019
 
 ================================================================================*/
 
@@ -395,7 +396,7 @@ star_align = {
 		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz"){
 
 			// Setup stage
-			files = inputs.toString()
+			String files = inputs.toString()
 			def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
 			output.dir = fst_alignment_path
 			String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
@@ -424,23 +425,29 @@ star_align = {
 
 index_bams = {
 
-	from("*.fastq.gz") {
-		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
+	produce("index_complete.txt"){
 
-			// Setup stage
-			def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
-			output.dir = fst_alignment_path
-			String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
+		from("*.fastq.gz") {
+			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
 
-			// Index aligned fusion SuperTranscriptome
-			produce("$output.dir/Aligned.sortedByCoord.out.bam.bai"){
+				// Setup stage
+				def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
+				output.dir = fst_alignment_path
+				String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
+
+				// Execute stage
 				exec "echo 'Indexing Alignment ($bam)'"
 				exec "samtools index $bam"
 				exec "echo 'Index Complete'"
+				exec "touch index_complete.txt"
+
 			}
 
 		}
-  	}
+
+	}
+
+
 }
 
 /*--Prep fusion files--*/
@@ -454,7 +461,7 @@ prepare_plot = {
 			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
 
 				// Setup Stage 
-				fusion_friendly = fusion_name.replaceAll(":", "_") // allows for windows compatiability
+				def fusion_friendly = fusion_name.replaceAll(":", "_") // allows for windows compatiability
 				def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
 				output.dir = "$fst_alignment_path/$fusion_friendly" // Creates new fusion folder in fusion alignment folder
 
@@ -472,11 +479,13 @@ prepare_plot = {
 plot_fusion = {
 
 	for(fusion_name in fusion){
+
+		def fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
+
 		from("*.fastq.gz") {
 			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") to ("${fusion_friendly}.pdf") {
 
 				// Setup Stage
-				fusion_friendly = fusion_name.replaceAll(":", "_") //allows for windows compatiability
 				def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
 				String plot_resources = "$fst_alignment_path/$fusion_friendly"
 				output.dir = plots_folder + "/" + sample_name

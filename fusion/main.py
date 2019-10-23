@@ -34,7 +34,7 @@ import annotation
 user_input = sys.argv
 
 # Get input
-fusion_input, destination, pos, gene_list_location, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header = setup.programInput(user_input)
+fusion_input, destination, pos, gene_list_location, genomic_coordinates, genome_build_location, st_location, annotation_location, protein_location, delimiter, competitive, supplied_fusions, header = setup.programInput(user_input)
 
 # Create a hash table of super transcripts
 st_file = open(st_location, 'r')
@@ -86,7 +86,7 @@ print "Creating fused superTranscriptome and annotation files"
 
 # create a new fasta file containing the fusion supertranscripts, save to results
 fusiontools.createFusionFasta(fusions, reference_folder, st_genes, competitive)
-fusiontools.createAnnotationFiles(fusions, st_genes, annotation_folder)
+fusiontools.createAnnotationFiles(fusions, st_genes, genomic_coordinates, annotation_folder)
 
 # Clean up
 if supplied_fusions == False:
