@@ -29,7 +29,7 @@ samtools index $fusion_folder/${fusion_friendly}.bam
 #------------------------------------------------------------------------------------------
 # Filter out reads with overhangs less than 5 (accounts for much of the noise in final plot)
 #------------------------------------------------------------------------------------------
-echo 'filtering BAM file for reads with overhangs < 5 (noise reduction)'
+echo 'filtering BAM file for reads with overhangs < 2 (noise reduction)'
 samtools view -h $fusion_folder/${fusion_friendly}.bam | \
 awk '{if($0 ~ /^@/){print $0;} else {cigar = $6; gsub("([0-9]+[S])","",cigar); gsub("([0-9]+[I])","",cigar); gsub("([0-9]+[D])","",cigar); gsub("([0-9]+[N])"S,"",cigar); m = split(cigar,matches,"M"); if(m > 2) {if(matches[1] > 0 && matches[m-1] > 0){print $0;}} else if(m <= 2) {print $0;}}}' | \
 samtools view -Sb - > $fusion_folder/${fusion_friendly}_lt5.bam
