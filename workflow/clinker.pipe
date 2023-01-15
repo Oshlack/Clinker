@@ -425,28 +425,22 @@ star_align = {
 
 index_bams = {
 
-	produce("index_complete.txt"){
+	from("*.fastq.gz") {
+		transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
 
-		from("*.fastq.gz") {
-			transform("(.*)_R1.fastq.gz","(.*)_R2.fastq.gz") {
+			// Setup stage
+			def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
+			output.dir = fst_alignment_path
+			String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
 
-				// Setup stage
-				def (String fst_alignment_path, String sample_name) = getSamplePath(inputs, alignment_folder)
-				output.dir = fst_alignment_path
-				String bam = "$output.dir/Aligned.sortedByCoord.out.bam"
-
-				// Execute stage
-				exec "echo 'Indexing Alignment ($bam)'"
-				exec "samtools index $bam"
-				exec "echo 'Index Complete'"
-				exec "touch $output.dir/index_complete.txt"
-
-			}
+			// Execute stage
+			exec "echo 'Indexing Alignment ($bam)'"
+			exec "samtools index $bam"
+			exec "echo 'Index Complete'"
 
 		}
 
 	}
-
 
 }
 
