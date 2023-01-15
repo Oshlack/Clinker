@@ -3,6 +3,9 @@
 </p>
 
 # Clinker - linking fusions to cancer
+
+**Note: Responses to issues may be slow/sporadic/non-existent as I'm working in a new field. I'll do my best!**
+
 Fusion Super Transcript generator and Plotter
 
 Please refer to the [wiki](https://github.com/Oshlack/Clinker/wiki) for further information & documentation.
