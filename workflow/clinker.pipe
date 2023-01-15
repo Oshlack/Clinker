@@ -439,7 +439,7 @@ index_bams = {
 				exec "echo 'Indexing Alignment ($bam)'"
 				exec "samtools index $bam"
 				exec "echo 'Index Complete'"
-				exec "touch index_complete.txt"
+				exec "touch $output.dir/index_complete.txt"
 
 			}
 
