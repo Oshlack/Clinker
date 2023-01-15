@@ -8,5 +8,6 @@ bpipe \
     -p align_mem=1000000000 \
     -p genome_mem=360000000000 \
     -p fusions=BCR:ABL1 \
+    -p out=$CLINKERDIR/test/results \
     $CLINKERDIR/workflow/clinker.pipe \
     $CLINKERDIR/test/fastq/*.fastq.gz
