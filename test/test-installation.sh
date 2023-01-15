@@ -3,9 +3,9 @@ bpipe \
     -p col=1,2,3,4 \
     -p genome=19 \
     -p print=true \
-    -p competitive=false \
+    -p competitive=true \
     -p header=true \
-    -p align_mem=1000000000 \
+    -p align_mem=360000000000 \
     -p genome_mem=360000000000 \
     -p fusions=BCR:ABL1 \
     -p out=$CLINKERDIR/test/results \
