@@ -23,7 +23,7 @@ printf '\n'
 echo $fusion
 echo '------------------------------------------'
 echo 'filtering BAM file for fusion of interest'
-samtools view -hq 1 $alignment_folder/Aligned.sortedByCoord.out.bam $fusion | \
+samtools view -hq 1 $alignment_folder/Aligned.sortedByCoord.out.bam {$fusion} | \
 			samtools view -Sb - > $fusion_folder/${fusion_friendly}.bam
 samtools index $fusion_folder/${fusion_friendly}.bam
 #------------------------------------------------------------------------------------------
