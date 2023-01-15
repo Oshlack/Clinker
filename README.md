@@ -4,7 +4,7 @@
 
 # Clinker - linking fusions to cancer
 
-**Note: Responses to issues may be slow/sporadic/non-existent as I'm no longer pursuing bioinformatics. I'll do my best!**
+**Note: Responses to issues may be slow/sporadic/non-existent as I'm pursuing a new career. I'll do my best!**
 
 Fusion Super Transcript generator and Plotter
 
